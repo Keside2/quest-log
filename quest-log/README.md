@@ -55,7 +55,7 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ## ⚙️ Development Setup
 
-To run this project locally, follow these steps:
+To run this project locally, follow these steps::
 
 1. **Clone the repository:**
    ```bash
