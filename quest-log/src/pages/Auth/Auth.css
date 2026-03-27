@@ -1,0 +1,113 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  position: relative;
+  /* Option A: Using a high-quality fantasy tavern image */
+  background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* This is the secret sauce to match your reference image */
+.auth-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* A radial gradient: transparent in the middle, dark on the edges */
+  background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(30, 41, 59, 0.6); /* Lower opacity for glass effect */
+  padding: 2.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  width: 90%; /* Mobile First */
+  max-width: 400px;
+  text-align: center;
+  backdrop-filter: blur(15px); /* This makes it look like the reference */
+}
+
+.auth-card h2 {
+  color: #f8fafc;
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+}
+
+.auth-card p {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.input-group {
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.input-group input {
+  width: 100%; /* Changed from 94% to 100% */
+  box-sizing: border-box; /* Ensures padding doesn't push it out of the box */
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: rgba(15, 23, 42, 0.8);
+  color: white;
+  outline: none;
+  font-size: 16px;
+}
+
+.input-group input:focus {
+  border-color: #38bdf8; /* Neon Blue */
+}
+
+.auth-btn {
+  background: #38bdf8;
+  color: #0f172a;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+
+.auth-btn:hover {
+  background: #7dd3fc;
+  transform: translateY(-2px);
+}
+
+.toggle-auth {
+  margin-top: 1.5rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.toggle-link {
+  color: #38bdf8;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+

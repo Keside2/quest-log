@@ -6,56 +6,51 @@ QuestLog is a specialized productivity SaaS that transforms daily coding tasks a
 
 Most productivity tools feel like chores. **QuestLog** uses gamification mechanics—XP, Leveling, and Achievement Badges—to drive user retention and make progress feel rewarding.
 
-## 🛠️ Planned Tech Stack
+## 🛠️ Tech Stack (Current)
 
 - **Frontend:** React (Plain CSS for high-performance styling)
 - **State Management:** React Context API
 - **Backend/DB:** Firebase (Firestore & Auth)
-- **Animations:** Framer Motion (for Level-Up and Quest-Completion effects)
-- **Platform:** PWA (Progressive Web App) for offline support
+- **Navigation:** React Router DOM
 
 ---
 
 ## 📈 Technical Roadmap
 
-### Phase 1: The Core Loop (Week 1)
+### Phase 1: The Core Loop (In Progress 🏗️)
 
 - [x] **Project Setup:** React + Firebase Initialization.
+- [x] **The Gatehouse:** Mobile-first Authentication (Login/Sign-up).
+- [x] **Hero Identity:** Firestore integration for Usernames and Stats.
+- [x] **The HUD:** Dynamic Dashboard with animated XP bar.
 - [ ] **Quest CRUD:** Create, Read, Update, and Delete logic for tasks.
 - [ ] **Difficulty Matrix:** Implementation of XP rewards based on task complexity.
-- [ ] **Real-time Sync:** Firestore integration for instant progress saving.
 
-### Phase 2: The Leveling Engine (Week 2)
+### Phase 2: The Leveling Engine
 
-- [ ] **Character Dashboard:** Visual UI for User Avatar, Level, and XP Bar.
 - [ ] **Level Logic:** Mathematical formula implementation for Level-Up thresholds.
 - [ ] **Habit Streaks:** Logic for daily login bonuses and task consistency.
+- [ ] **Sound Effects:** 8-bit audio cues for quest completion.
 
-### Phase 3: Engagement & UI (Week 3)
+### Phase 3: Engagement & UI
 
 - [ ] **Achievement System:** Badges for "First Quest," "Week Streak," and "Boss Slayer."
-- [ ] **Framer Motion Integration:** High-fidelity animations for UI feedback.
-- [ ] **Dark Mode:** A native-feeling dark theme for developer focus.
-
-### Phase 4: Performance & Deployment (Week 4)
-
-- [ ] **PWA Configuration:** Service workers for offline task management.
-- [ ] **Performance Audit:** Optimizing rendering for a "snappy" game feel.
-- [ ] **Public Launch:** Deployment to Render/Vercel.
+- [ ] **Framer Motion:** High-fidelity animations for Level-Up effects.
+- [ ] **Theme Engine:** Deep Space / Cyberpunk aesthetic toggle.
 
 ---
 
-## 🛡️ Future Evolution
+## 🛡️ Future Evolution (The Legendary Tier)
 
-- [ ] **Boss Battles:** Grouping sub-tasks into a "Boss" that requires 5 hits (tasks) to defeat.
-- [ ] **Guilds:** Basic social integration to share progress with friends.
-- [ ] **Gear System:** Unlockable cosmetic icons/avatars as users level up.
+- [ ] **The Honor System (Quest Proof):** Optional "Proof of Work" field (links, screenshots, or commit hashes) required to claim XP.
+- [ ] **Automated Quests:** GitHub API integration to automatically grant XP upon successful Pull Requests or Commits.
+- [ ] **Boss Battles:** Grouping sub-tasks into a "Boss" that requires multiple "hits" (completed tasks) to defeat.
+- [ ] **Gear System:** Unlockable cosmetic icons and profile borders as users level up.
+- [ ] **Guilds:** Social integration to see friend's levels and compete on a leaderboard.
 
 ---
 
 ## ⚙️ Development Setup
-
-To run this project locally, follow these steps::
 
 1. **Clone the repository:**
    ```bash
