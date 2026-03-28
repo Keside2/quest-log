@@ -1,0 +1,45 @@
+.avatar-stage {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #38bdf8;
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.avatar-layer {
+  position: absolute;
+  transition: all 0.5s ease;
+}
+
+.cloak-layer { z-index: 1; margin-top: 10px; opacity: 0.8; }
+.base-body { z-index: 2; }
+.weapon-layer { z-index: 3; margin-left: 40px; }
+.boots-layer { z-index: 3; margin-top: 50px; font-size: 1.5rem; }
+
+.aura-layer {
+  z-index: 0;
+  font-size: 5rem;
+  animation: rotateAura 5s linear infinite;
+}
+
+.level-tag {
+  position: absolute;
+  bottom: -5px;
+  background: #38bdf8;
+  color: #0f172a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+@keyframes rotateAura {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

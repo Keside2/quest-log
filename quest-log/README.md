@@ -12,41 +12,57 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 - **State Management:** React Context API
 - **Backend/DB:** Firebase (Firestore & Auth)
 - **Navigation:** React Router DOM
+- **Feedback:** React Hot Toast
 
 ---
 
 ## 📈 Technical Roadmap
 
-### Phase 1: The Core Loop (In Progress 🏗️)
+### Phase 1: The Core Loop (Completed ✅)
 
 - [x] **Project Setup:** React + Firebase Initialization.
 - [x] **The Gatehouse:** Mobile-first Authentication (Login/Sign-up).
 - [x] **Hero Identity:** Firestore integration for Usernames and Stats.
 - [x] **The HUD:** Dynamic Dashboard with animated XP bar.
-- [ ] **Quest CRUD:** Create, Read, Update, and Delete logic for tasks.
+- [x] **The Archivist:** Quest History with Pagination and Delete logic.
+- [x] **Victory Sequence:** Level-Up Overlay animation and logic.
+- [x] **Quest CRUD:** Create, Read, Update, and Delete logic for tasks.
+- [x] **Time Mastery:** Estimated duration tracking for better raid planning.
+
+### Phase 2: The Hero's Journey (In Progress 🏗️)
+
 - [ ] **Difficulty Matrix:** Implementation of XP rewards based on task complexity.
+- [ ] **Layered Avatar System:** A visual "Hero" character that unlocks gear at specific levels.
+- [ ] **Loot Drops:** Logic to "award" items (Cloaks, Swords, Auras) to the user's Firestore profile.
+- [ ] **Boss Battles:** High-stakes quests with "multi-hit" requirements and legendary rewards.
 
-### Phase 2: The Leveling Engine
+### Phase 3: Polish & Sound
 
-- [ ] **Level Logic:** Mathematical formula implementation for Level-Up thresholds.
+- [ ] **Level Logic:** Mathematical formula for scaling Level-Up thresholds.
 - [ ] **Habit Streaks:** Logic for daily login bonuses and task consistency.
-- [ ] **Sound Effects:** 8-bit audio cues for quest completion.
+- [ ] **Sound Effects:** 8-bit audio cues for quest completion and UI interaction.
 
-### Phase 3: Engagement & UI
+---
 
-- [ ] **Achievement System:** Badges for "First Quest," "Week Streak," and "Boss Slayer."
-- [ ] **Framer Motion:** High-fidelity animations for Level-Up effects.
-- [ ] **Theme Engine:** Deep Space / Cyberpunk aesthetic toggle.
+## 🏗️ Data Schema: The Quest Model
+
+| Field         | Type      | Description                                 |
+| :------------ | :-------- | :------------------------------------------ |
+| `title`       | String    | What you need to do (e.g., "Fix Navbar").   |
+| `difficulty`  | String    | Easy, Medium, or Hard.                      |
+| `xp`          | Number    | The calculated reward (10, 25, or 50 XP).   |
+| `status`      | String    | `active` or `completed`.                    |
+| `userId`      | String    | Links the quest to the specific Hero's UID. |
+| `createdAt`   | Timestamp | For sorting quests by date.                 |
+| `completedAt` | Timestamp | For tracking when the legend was written.   |
 
 ---
 
 ## 🛡️ Future Evolution (The Legendary Tier)
 
-- [ ] **The Honor System (Quest Proof):** Optional "Proof of Work" field (links, screenshots, or commit hashes) required to claim XP.
-- [ ] **Automated Quests:** GitHub API integration to automatically grant XP upon successful Pull Requests or Commits.
-- [ ] **Boss Battles:** Grouping sub-tasks into a "Boss" that requires multiple "hits" (completed tasks) to defeat.
-- [ ] **Gear System:** Unlockable cosmetic icons and profile borders as users level up.
-- [ ] **Guilds:** Social integration to see friend's levels and compete on a leaderboard.
+- [ ] **The Honor System:** Optional "Proof of Work" field required to claim XP.
+- [ ] **Automated Quests:** GitHub API integration for XP via Commits/PRs.
+- [ ] **Social Tavern:** View friend's avatars and compete on a leaderboard.
 
 ---
 

@@ -5,22 +5,23 @@ import "./Auth.css";
 
 export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
-    const [username, setUsername] = useState(""); // New state for Username
+    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [message, setMessage] = useState(""); // For success messages
 
-    const { login, signUp } = useAuth();
+    const { login, signUp, resetPassword } = useAuth(); // Added resetPassword
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        setMessage("");
         try {
             if (isLogin) {
                 await login(email, password);
             } else {
-                // In Phase 2, we will save the 'username' to Firestore here
                 await signUp(email, password, username);
             }
             navigate("/");
@@ -28,9 +29,24 @@ export default function Auth() {
             if (err.code === 'auth/email-already-in-use') {
                 setError("This email is already registered. Try logging in!");
             } else {
-                setError("Failed to create account. Check your password length (min 6).");
+                setError("Invalid credentials or account error.");
             }
             console.error(err);
+        }
+    };
+
+    // Handler for Forgot Password
+    const handleForgotPassword = async () => {
+        if (!email) {
+            setError("Please enter your email address first.");
+            return;
+        }
+        try {
+            await resetPassword(email);
+            setMessage("Check your inbox for password reset instructions!");
+            setError("");
+        } catch (err) {
+            setError("Failed to send reset email. Check if the email is correct.");
         }
     };
 
@@ -41,9 +57,9 @@ export default function Auth() {
                 <p>{isLogin ? "The Tavern awaits your return." : "Create an account to track your XP."}</p>
 
                 {error && <div style={{ color: "#ff4444", marginBottom: "1rem" }}>{error}</div>}
+                {message && <div style={{ color: "#10b981", marginBottom: "1rem" }}>{message}</div>}
 
                 <form className="auth-form" onSubmit={handleSubmit}>
-                    {/* Username Field - Only shows during Sign Up */}
                     {!isLogin && (
                         <div className="input-group">
                             <label>Character Name (Username)</label>
@@ -65,15 +81,29 @@ export default function Auth() {
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
+
                     <div className="input-group">
                         <label>Password</label>
                         <input
                             type="password"
                             placeholder="••••••••"
-                            required
+                            required={isLogin} // Only strictly required for Login/Signup
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
+
+                    {/* Forgot Password Link */}
+                    {isLogin && (
+                        <div style={{ textAlign: "right", marginTop: "-10px", marginBottom: "15px" }}>
+                            <span
+                                onClick={handleForgotPassword}
+                                style={{ color: "#38bdf8", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
+                            >
+                                Forgot Password?
+                            </span>
+                        </div>
+                    )}
+
                     <button type="submit" className="auth-btn">
                         {isLogin ? "Enter Tavern" : "Start Adventure"}
                     </button>

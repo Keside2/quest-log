@@ -1,0 +1,32 @@
+.filter-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  overflow-x: auto; /* Scrollable on mobile */
+  padding-bottom: 5px;
+}
+
+.filter-pill {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #94a3b8;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  border-color: #38bdf8;
+  color: #f8fafc;
+}
+
+.filter-pill.active {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
