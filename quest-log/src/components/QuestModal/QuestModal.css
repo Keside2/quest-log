@@ -49,6 +49,9 @@
   font-size: 2rem;
   cursor: pointer;
 }
+.close-x:hover{
+    color: red;
+}
 
 .modal-actions {
   display: flex;
@@ -64,6 +67,11 @@
   padding: 0.8rem;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.cancel-btn:hover{
+     border: 1px solid red;
+     color: white;
 }
 
 .confirm-btn {
@@ -92,4 +100,7 @@ select {
   color: white;
   border-radius: 8px;
   margin-top: 0.5rem;
+}
+label{
+    margin-top: 20px;
 }

@@ -28,13 +28,14 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 - [x] **Victory Sequence:** Level-Up Overlay animation and logic.
 - [x] **Quest CRUD:** Create, Read, Update, and Delete logic for tasks.
 - [x] **Time Mastery:** Estimated duration tracking for better raid planning.
+- [x] **Tactical HUD:** Real-time Difficulty Filtering (Easy/Medium/Hard).
 
 ### Phase 2: The Hero's Journey (In Progress 🏗️)
 
-- [ ] **Difficulty Matrix:** Implementation of XP rewards based on task complexity.
-- [ ] **Layered Avatar System:** A visual "Hero" character that unlocks gear at specific levels.
-- [ ] **Loot Drops:** Logic to "award" items (Cloaks, Swords, Auras) to the user's Firestore profile.
-- [ ] **Boss Battles:** High-stakes quests with "multi-hit" requirements and legendary rewards.
+- [ ] **Layered Avatar System:** A visual "Hero" character that unlocks gear (Cloaks, Boots, Swords) at specific levels.
+- [ ] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.
+- [ ] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements.
+- [ ] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
 
 ### Phase 3: Polish & Sound
 
@@ -46,15 +47,27 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ## 🏗️ Data Schema: The Quest Model
 
-| Field         | Type      | Description                                 |
-| :------------ | :-------- | :------------------------------------------ |
-| `title`       | String    | What you need to do (e.g., "Fix Navbar").   |
-| `difficulty`  | String    | Easy, Medium, or Hard.                      |
-| `xp`          | Number    | The calculated reward (10, 25, or 50 XP).   |
-| `status`      | String    | `active` or `completed`.                    |
-| `userId`      | String    | Links the quest to the specific Hero's UID. |
-| `createdAt`   | Timestamp | For sorting quests by date.                 |
-| `completedAt` | Timestamp | For tracking when the legend was written.   |
+| Field        | Type      | Description                                 |
+| :----------- | :-------- | :------------------------------------------ |
+| `title`      | String    | What you need to do (e.g., "Fix Navbar").   |
+| `difficulty` | String    | Easy, Medium, or Hard.                      |
+| `xp`         | Number    | The calculated reward (10, 25, or 50 XP).   |
+| `duration`   | String    | Estimated time (15m, 30m, 60m, 120m).       |
+| `status`     | String    | `active` or `completed`.                    |
+| `type`       | String    | `normal` or `boss`.                         |
+| `hp`         | Number    | Required "hits" to finish (Boss only).      |
+| `userId`     | String    | Links the quest to the specific Hero's UID. |
+| `createdAt`  | Timestamp | For sorting quests by date.                 |
+
+---
+
+## 👹 Boss Battle Mechanics
+
+To handle large projects, QuestLog implements **Scaling Bosses**:
+
+- **Multi-Hit HP:** Unlike normal quests, Bosses require multiple "attacks" (progress updates) to defeat.
+- **Dynamic Scaling:** Boss HP scales with the player's level ($HP = Base + Level \times 1.5$).
+- **Tiered Rewards:** Level 10+ Bosses unlock Legendary Loot and Auras.
 
 ---
 
@@ -66,10 +79,21 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ---
 
+## 📜 Dev Log
+
+### Day 77: March 29, 2026
+
+> Today is a strict "No Code" Sunday. Taking time to reset, lean into my hobbies, and celebrate. 🌿
+> Happy Palm Sunday! 🕊️✨
+
+---
+
 ## ⚙️ Development Setup
 
 1. **Clone the repository:**
    ```bash
    git clone [https://github.com/Keside2/quest-log.git](https://github.com/Keside2/quest-log.git)
    cd quest-log
+   npm install
+   npm start
    ```
