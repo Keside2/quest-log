@@ -1,0 +1,70 @@
+/* 👹 THE BOSS CORE */
+.quest-card.boss-mode {
+    border: 2px solid #ef4444;
+    background: linear-gradient(145deg, #1e1e2e, #2d1b1b);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.boss-hp-bar {
+    width: 100%;
+    height: 12px;
+    background: #111827;
+    border-radius: 6px;
+    margin-top: 15px;
+    border: 1px solid #451a1a;
+    position: relative;
+}
+
+.hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444, #b91c1c);
+    box-shadow: 0 0 10px #ef4444;
+    transition: width 0.4s ease-out;
+}
+
+/* ⚔️ EVOLUTION STATES */
+/* LEVEL 10-14: ELITE */
+.quest-card.boss-mode[data-boss-level^="1"] {
+    border-color: #f59e0b;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+/* LEVEL 20+: MYTHIC */
+.quest-card.boss-mode[data-boss-level^="2"] {
+    border: 3px solid #ff0000;
+    background: black;
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
+}
+
+.quest-card.boss-mode[data-boss-level^="2"]::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -1;
+    background: radial-gradient(circle, rgba(255,0,0,0.2) 0%, transparent 70%);
+    filter: blur(20px);
+    animation: void-leak 4s infinite ease-in-out;
+}
+
+/* 🌀 ANIMATIONS */
+.boss-damage-shake { animation: hit-shake 0.4s ease-in-out; }
+.world-event-shake { animation: world-shake 0.8s both; }
+
+@keyframes hit-shake {
+    0% { transform: translateX(0); filter: brightness(2); }
+    50% { transform: translateX(5px); }
+    100% { transform: translateX(0); filter: brightness(1); }
+}
+
+@keyframes world-shake {
+    10%, 90% { transform: translate3d(-2px, 0, 0); }
+    30%, 70% { transform: translate3d(-6px, 0, 0); }
+    40%, 60% { transform: translate3d(6px, 0, 0); }
+}
+
+@keyframes void-leak {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}

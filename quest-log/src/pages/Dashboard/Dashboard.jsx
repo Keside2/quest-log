@@ -11,15 +11,19 @@ import {
     onSnapshot,
     orderBy,
     updateDoc,
-    deleteDoc, // 1. Added deleteDoc
+    deleteDoc
 } from "firebase/firestore";
 import QuestModal from "../../components/QuestModal/QuestModal";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast'; // Correctly imported
 import LevelUpOverlay from "../../components/LevelUpOverlay/LevelUpOverlay";
 import { REWARD_TABLE } from "../../constants/rewards";
 import HeroAvatar from "../../components/HeroAvatar/HeroAvatar";
 import QuestFilter from "../../components/QuestFilter/QuestFilter";
+import BossManager from "../../components/BossManager/BossManager";
 import "./Dashboard.css";
+import "./BossStyles.css";
+
+const victorySound = new Audio("https://actions.google.com/sounds/v1/foley/wind_chime_fast_up.ogg");
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
@@ -29,306 +33,231 @@ export default function Dashboard() {
     const [completedQuests, setCompletedQuests] = useState([]);
     const [showLevelUp, setShowLevelUp] = useState(false);
     const [activeFilter, setActiveFilter] = useState('All');
+    const [hittingBossId, setHittingBossId] = useState(null);
+    const [isWorldShaking, setIsWorldShaking] = useState(false);
 
-    // 1. ADD THE CLEAR ALL FUNCTION
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    const currentXpLimit = profile ? Math.floor(100 * Math.pow(1.2, (profile.level || 1) - 1)) : 100;
+
+    // Listen to User Profile
+    useEffect(() => {
+        if (!user) return;
+        return onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) setProfile({ ...docSnap.data() });
+        });
+    }, [user]);
+
+    // Listen to Quests
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "quests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+        return onSnapshot(q, (querySnapshot) => {
+            const active = [];
+            const finished = [];
+            querySnapshot.forEach((doc) => {
+                const data = { id: doc.id, ...doc.data() };
+                data.status === "completed" ? finished.push(data) : active.push(data);
+            });
+            setQuests(active);
+            setCompletedQuests(finished);
+        });
+    }, [user]);
+
+    const handleCompleteQuest = async (questId, questXp, questType, currentHp) => {
+        if (!user || !profile) return;
+
+        // Boss Battle Logic
+        if (questType === "boss" && currentHp > 1) {
+            setHittingBossId(questId);
+            setTimeout(() => setHittingBossId(null), 400);
+            await updateDoc(doc(db, "quests", questId), { currentHp: currentHp - 1 });
+            toast.success(`HIT! ${currentHp - 1} HP remaining! ⚔️`);
+            return;
+        }
+
+        if (questType === "boss" && currentHp === 1) {
+            victorySound.play();
+            toast.success("THE BEAST HAS FALLEN! 🔥", { icon: "🏆" });
+        }
+
+        // XP and Leveling Logic
+        let newXp = (profile.xp || 0) + questXp;
+        let newLevel = profile.level || 1;
+        const xpReq = Math.floor(100 * Math.pow(1.2, newLevel - 1));
+
+        if (newXp >= xpReq) {
+            newLevel++;
+            newXp -= xpReq;
+            setShowLevelUp(true);
+        }
+
+        const updates = { xp: newXp, level: newLevel };
+        if (REWARD_TABLE[newLevel]) {
+            const inv = profile.inventory || [];
+            if (!inv.includes(REWARD_TABLE[newLevel].id)) {
+                updates.inventory = [...inv, REWARD_TABLE[newLevel].id];
+                toast(`New Item Unlocked: ${REWARD_TABLE[newLevel].name}`, { icon: '🛡️' });
+            }
+        }
+
+        await updateDoc(doc(db, "users", user.uid), updates);
+        await updateDoc(doc(db, "quests", questId), {
+            status: "completed",
+            currentHp: 0,
+            completedAt: serverTimestamp()
+        });
+
+        if (!showLevelUp) toast.success(questType === 'boss' ? "Victory Achieved!" : "Quest Finished! +XP");
+    };
+
     const handleClearAllHistory = async () => {
-        const confirmClear = window.confirm("Are you sure? This will erase your entire legend forever! 📜🔥");
-
-        if (confirmClear) {
+        if (window.confirm("Are you sure? This will erase your entire legend forever! 📜🔥")) {
             try {
-                // We create a promise for every delete operation
-                const deletePromises = completedQuests.map(quest =>
-                    deleteDoc(doc(db, "quests", quest.id))
-                );
-
-                // Wait for all deletions to finish
+                const deletePromises = completedQuests.map(q => deleteDoc(doc(db, "quests", q.id)));
                 await Promise.all(deletePromises);
-
-                // Reset to page 1 since history is gone
                 setCurrentPage(1);
                 toast.success("History wiped clean!");
             } catch (err) {
-                console.error(err);
                 toast.error("Failed to clear some items.");
             }
         }
     };
 
-    // PAGINATION STATE
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
-
-    useEffect(() => {
-        if (!user) return;
-        const docRef = doc(db, "users", user.uid);
-        const unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setProfile({ ...docSnap.data() });
-            }
-        });
-        return () => unsubscribe();
-    }, [user]);
-
-    useEffect(() => {
-        if (!user) return;
-        const q = query(
-            collection(db, "quests"),
-            where("userId", "==", user.uid),
-            orderBy("createdAt", "desc")
-        );
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            const active = [];
-            const finished = [];
-
-            querySnapshot.forEach((doc) => {
-                const data = { id: doc.id, ...doc.data() };
-                if (data.status === "completed") {
-                    finished.push(data);
-                } else {
-                    active.push(data);
-                }
-            });
-
-            setQuests(active);
-            setCompletedQuests(finished);
-        });
-        return () => unsubscribe();
-    }, [user]);
-
-    const handleAddQuest = async (questData) => {
+    const handleDeleteHistoryItem = async (id) => {
         try {
-            if (!user) return;
-            await addDoc(collection(db, "quests"), {
-                ...questData,
-                userId: user.uid,
-                createdAt: serverTimestamp(),
-                status: "active"
-            });
-            toast.success("New Quest Summoned! 📜");
+            await deleteDoc(doc(db, "quests", id));
+            toast.success("Memory erased!");
         } catch (err) {
-            toast.error("Failed to summon quest...");
+            toast.error("Error deleting item.");
         }
     };
 
-    const handleCompleteQuest = async (questId, questXp) => {
-        try {
-            if (!user || !profile) return;
+    const filteredQuests = quests.filter(q => activeFilter === 'All' || q.difficulty === activeFilter);
 
-            let newXp = (profile.xp || 0) + questXp;
-            let newLevel = profile.level || 1;
-            let leveledUp = false;
-            let unlockedItem = null;
-
-            if (newXp >= 100) {
-                newLevel += 1;
-                newXp = newXp - 100;
-                leveledUp = true;
-
-                // CHECK FOR REWARD
-                if (REWARD_TABLE[newLevel]) {
-                    unlockedItem = REWARD_TABLE[newLevel];
-                }
-            }
-
-            const userRef = doc(db, "users", user.uid);
-
-            // Prepare the update object
-            const updates = {
-                xp: newXp,
-                level: newLevel
-            };
-
-            // If an item was unlocked, add it to the user's inventory
-            if (unlockedItem) {
-                // We use an array to store all unlocked item IDs
-                const currentInventory = profile.inventory || [];
-                if (!currentInventory.includes(unlockedItem.id)) {
-                    updates.inventory = [...currentInventory, unlockedItem.id];
-                }
-            }
-
-            await updateDoc(userRef, updates);
-
-            // Update Quest Status
-            const questRef = doc(db, "quests", questId);
-            await updateDoc(questRef, {
-                status: "completed",
-                completedAt: serverTimestamp()
-            });
-
-            if (leveledUp) {
-                setShowLevelUp(true);
-                if (unlockedItem) {
-                    toast(`UNLOCKED: ${unlockedItem.name}!`, { icon: unlockedItem.icon });
-                }
-            } else {
-                toast.success(`Quest Finished! +${questXp} XP`);
-            }
-
-        } catch (err) {
-            console.error(err);
-            toast.error("Error claiming reward.");
-        }
-    };
-
-    // DELETE FROM HISTORY
-    const handleDeleteHistory = async (questId) => {
-        try {
-            await deleteDoc(doc(db, "quests", questId));
-            toast.success("Memory erased! 🧹");
-        } catch (err) {
-            toast.error("Could not delete history item.");
-        }
-    };
-
-    // PAGINATION CALCULATIONS
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = completedQuests.slice(indexOfFirstItem, indexOfLastItem);
+    // Pagination Logic
     const totalPages = Math.ceil(completedQuests.length / itemsPerPage);
-
-    const filteredQuests = quests.filter(quest => {
-        if (activeFilter === 'All') return true;
-        return quest.difficulty === activeFilter;
-    });
+    const currentItems = completedQuests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <div className="dashboard-container">
+        <div className={`dashboard-container ${isWorldShaking ? 'world-event-shake' : ''}`}>
+            {isWorldShaking && <div className="boss-spawn-overlay"><h1>BEWARE...</h1></div>}
+
+            {/* Toaster placed once at the top level */}
             <Toaster position="top-center" reverseOrder={false} />
 
+            <BossManager
+                user={user}
+                profile={profile}
+                activeQuests={quests}
+                setIsWorldShaking={setIsWorldShaking}
+            />
+
             <header className="stats-header">
-                <HeroAvatar
-                    inventory={profile?.inventory}
-                    level={profile?.level}
-                />
+                <HeroAvatar inventory={profile?.inventory} level={profile?.level} />
                 <div className="hero-info">
-                    <p>Logged in as {user?.email}</p>
+                    <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user?.email}</p>
                     <h2>{profile?.username || "Adventurer"}</h2>
                 </div>
-
                 <div className="xp-container">
                     <span>Level {profile?.level || 1}</span>
                     <div className="xp-bar-bg">
-                        <div
-                            className="xp-bar-fill"
-                            style={{ width: profile ? `${(profile.xp / 100) * 100}%` : "0%" }}
-                        ></div>
+                        <div className="xp-bar-fill" style={{ width: `${(profile?.xp / currentXpLimit) * 100}%` }}></div>
                     </div>
-                    <small style={{ color: "#94a3b8" }}>{profile?.xp || 0} / 100 XP</small>
+                    <small>{profile?.xp || 0} / {currentXpLimit} XP</small>
                 </div>
-
                 <button onClick={logout} className="logout-btn">Leave Tavern</button>
             </header>
 
             <main className="quest-section">
                 <div className="section-header">
-                    <h3>Current Quest Board</h3>
-                    <button className="add-quest-pill" onClick={() => setIsModalOpen(true)}>
+                    <h3>Quest Board</h3>
+                    <button
+                        // className={`add-quest-pill ${filteredQuests.length === 0 ? 'pulse-prompt' : ''}`}
+                        className="add-quest-pill pulse-prompt"
+                        onClick={() => setIsModalOpen(true)}
+                    >
                         + New Quest
                     </button>
                 </div>
 
-                {/* 1. ADD THE FILTER UI HERE */}
-                <QuestFilter
-                    activeFilter={activeFilter}
-                    setActiveFilter={setActiveFilter}
-                />
+                <QuestFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
 
-                {/* 2. USE filteredQuests INSTEAD OF quests */}
-                {filteredQuests.length === 0 ? (
-                    <div className="empty-state">
-                        <h1 style={{ fontSize: "2rem", opacity: 0.2 }}>
-                            {activeFilter === 'All' ? "NO ACTIVE QUESTS" : `NO ${activeFilter.toUpperCase()} QUESTS`}
-                        </h1>
-                    </div>
-                ) : (
-                    <div className="quest-grid">
-                        {filteredQuests.map((quest) => (
-                            <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()}`}>
-                                <div className="quest-info">
-                                    <div className="card-meta">
-                                        <span className="difficulty-label">{quest.difficulty}</span>
-                                        {/* ADD THIS SPAN */}
-                                        <span className="duration-label">⏳ {quest.duration}m</span>
+                <div className="quest-grid">
+                    {filteredQuests.map((quest) => (
+                        <div key={quest.id}
+                            className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}
+                            data-boss-level={quest.level || 0}>
+
+                            <div className="quest-info">
+                                <div className="card-meta">
+                                    <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
+                                    <span className="duration-label">⏳ {quest.duration || 30}m</span>
+                                </div>
+                                <h4>{quest.title}</h4>
+                                {quest.type === 'boss' && (
+                                    <div className="boss-hp-bar">
+                                        <div className="hp-fill" style={{ width: `${(quest.currentHp / quest.hp) * 100}%` }}></div>
+                                        <small>{quest.currentHp}/{quest.hp} HP</small>
                                     </div>
-                                    <h4>{quest.title}</h4>
-                                </div>
-                                <div className="quest-reward-zone">
-                                    <span className="xp-badge">+{quest.xp} XP</span>
-                                    <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp)}>
-                                        Complete
-                                    </button>
-                                </div>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                )}
 
-                {/* --- UPDATED HISTORY SECTION --- */}
-                <section className="history-section" style={{ marginTop: "4rem" }}>
-                    <div className="section-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <h3>Quest History</h3>
-                            <span className="count-badge">{completedQuests.length} Total</span>
+                            <div className="quest-reward-zone">
+                                <span className="xp-badge">+{quest.xp} XP</span>
+                                <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp)}>
+                                    {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
+                                </button>
+                            </div>
                         </div>
+                    ))}
+                </div>
 
-                        {/* 2. ADD THE CLEAR BUTTON IN THE HEADER */}
+                <section className="history-section">
+                    <div className="section-header">
+                        <h3>Quest History ({completedQuests.length})</h3>
                         {completedQuests.length > 0 && (
-                            <button
-                                className="clear-all-btn"
-                                onClick={handleClearAllHistory}
-                            >
-                                Clear All
-                            </button>
+                            <button onClick={handleClearAllHistory} className="clear-all-btn">Clear All</button>
                         )}
                     </div>
-
                     <div className="history-list">
                         {currentItems.length === 0 ? (
                             <p className="empty-text">No legends written yet...</p>
                         ) : (
-                            currentItems.map((quest) => (
-                                <div key={quest.id} className="history-item">
+                            currentItems.map(q => (
+                                <div key={q.id} className="history-item">
                                     <div className="history-info">
                                         <span className="check-icon">✔</span>
-                                        <p>{quest.title}</p>
+                                        <p>{q.title}</p>
                                     </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                                        <span className="xp-reward">+{quest.xp} XP</span>
-                                        <button
-                                            className="delete-hist-btn"
-                                            onClick={() => handleDeleteHistory(quest.id)}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
+                                    <button className="delete-hist-btn" onClick={() => handleDeleteHistoryItem(q.id)}>🗑️</button>
                                 </div>
                             ))
                         )}
                     </div>
 
-                    {/* PAGINATION CONTROLS */}
                     {totalPages > 1 && (
                         <div className="pagination-controls">
-                            <button
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                            >
-                                Previous
-                            </button>
+                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
                             <span>Page {currentPage} of {totalPages}</span>
-                            <button
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                            >
-                                Next
-                            </button>
+                            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
                         </div>
                     )}
                 </section>
             </main>
 
-            <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddQuest={handleAddQuest} />
+            <QuestModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onAddQuest={(d) => {
+                    addDoc(collection(db, "quests"), { ...d, userId: user.uid, createdAt: serverTimestamp(), status: "active" });
+                    toast.success("Quest Summoned!");
+                }}
+                userLevel={profile?.level || 1}
+            />
+
             <LevelUpOverlay
                 isOpen={showLevelUp}
                 level={profile?.level}
