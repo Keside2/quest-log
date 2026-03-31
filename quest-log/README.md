@@ -4,7 +4,7 @@ QuestLog is a specialized productivity SaaS that transforms daily coding tasks a
 
 ## 🚀 Concept
 
-Most productivity tools feel like chores. **QuestLog** uses gamification mechanics—XP, Leveling, and Achievement Badges—to drive user retention and make progress feel rewarding.
+Most productivity tools feel like chores. **QuestLog** uses gamification mechanics—XP, Leveling, and Evolution Tiers—to drive user retention and make progress feel rewarding.
 
 ## 🛠️ Tech Stack (Current)
 
@@ -32,9 +32,10 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ### Phase 2: The Hero's Journey (In Progress 🏗️)
 
-- [ ] **Layered Avatar System:** A visual "Hero" character that unlocks gear (Cloaks, Boots, Swords) at specific levels.
+- [x] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements. ✅
+- [x] **Screen Shake:** Impact effects for Boss attacks. ✅
+- [x] **Evolutionary Avatar:** Visual "Hero" character that transforms at level milestones. ✅
 - [ ] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.
-- [ ] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements.
 - [ ] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
 
 ### Phase 3: Polish & Sound
@@ -42,6 +43,20 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 - [ ] **Level Logic:** Mathematical formula for scaling Level-Up thresholds.
 - [ ] **Habit Streaks:** Logic for daily login bonuses and task consistency.
 - [ ] **Sound Effects:** 8-bit audio cues for quest completion and UI interaction.
+
+---
+
+## 👤 Hero Evolution Tiers
+
+The user's avatar physically evolves as they grow stronger.
+
+| Tier           | Levels  | Icon | Title          |
+| :------------- | :------ | :--- | :------------- |
+| **Apprentice** | 1 - 4   | 👤   | The Wanderer   |
+| **Warrior**    | 5 - 9   | ⚔️   | The Skirmisher |
+| **Knight**     | 10 - 19 | 🛡️   | The Guardian   |
+| **Lord**       | 20 - 49 | 👑   | The Sovereign  |
+| **Mythic**     | 50+     | 🧙‍♂️   | The Eternal    |
 
 ---
 
@@ -81,10 +96,9 @@ To handle large projects, QuestLog implements **Scaling Bosses**:
 
 ## 📜 Dev Log
 
-### Day 77: March 29, 2026
+### Day 78: March 31, 2026
 
-> Today is a strict "No Code" Sunday. Taking time to reset, lean into my hobbies, and celebrate. 🌿
-> Happy Palm Sunday! 🕊️✨
+> Implemented the Hero Evolution system! The avatar now transitions from a Wanderer to a Warrior at Level 5, featuring a dynamic "magical blob" floating animation and rank-based color glows.
 
 ---
 

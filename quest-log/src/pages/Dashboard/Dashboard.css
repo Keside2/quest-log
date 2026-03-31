@@ -234,3 +234,39 @@
     background: #38bdf8;
     color: #0f172a !important;
 }
+
+.streak-badge {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 15px rgba(251, 146, 60, 0.1);
+    transition: 0.3s;
+}
+
+.streak-badge:hover {
+    transform: scale(1.05);
+    border-color: #fb923c;
+    box-shadow: 0 0 20px rgba(251, 146, 60, 0.2);
+}
+
+.streak-fire {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px #fb923c);
+    animation: flicker 1.5s infinite alternate;
+}
+
+.streak-count {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fb923c;
+    letter-spacing: 1px;
+}
+
+@keyframes flicker {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.1); opacity: 1; }
+}

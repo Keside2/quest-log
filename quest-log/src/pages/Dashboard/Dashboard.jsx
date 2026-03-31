@@ -14,12 +14,13 @@ import {
     deleteDoc
 } from "firebase/firestore";
 import QuestModal from "../../components/QuestModal/QuestModal";
-import toast, { Toaster } from 'react-hot-toast'; // Correctly imported
+import toast, { Toaster } from 'react-hot-toast';
 import LevelUpOverlay from "../../components/LevelUpOverlay/LevelUpOverlay";
 import { REWARD_TABLE } from "../../constants/rewards";
 import HeroAvatar from "../../components/HeroAvatar/HeroAvatar";
 import QuestFilter from "../../components/QuestFilter/QuestFilter";
 import BossManager from "../../components/BossManager/BossManager";
+import { BOSS_LOOT_TABLE } from "../../constants/loot"; // Imported loot table
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -32,14 +33,14 @@ export default function Dashboard() {
     const [quests, setQuests] = useState([]);
     const [completedQuests, setCompletedQuests] = useState([]);
     const [showLevelUp, setShowLevelUp] = useState(false);
+    const [unlockedLoot, setUnlockedLoot] = useState([]); // NEW: State for the overlay loot
     const [activeFilter, setActiveFilter] = useState('All');
     const [hittingBossId, setHittingBossId] = useState(null);
     const [isWorldShaking, setIsWorldShaking] = useState(false);
 
-    // Pagination State
+    // Pagination & XP Limits
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-
     const currentXpLimit = profile ? Math.floor(100 * Math.pow(1.2, (profile.level || 1) - 1)) : 100;
 
     // Listen to User Profile
@@ -66,10 +67,33 @@ export default function Dashboard() {
         });
     }, [user]);
 
+    // Habit Streak Logic
+    useEffect(() => {
+        if (!user || !profile) return;
+        const checkStreak = async () => {
+            const today = new Date().toDateString();
+            const lastLoginDate = profile.lastLogin?.toDate().toDateString();
+            if (lastLoginDate === today) return;
+
+            let newStreak = profile.streak || 0;
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (lastLoginDate === yesterday.toDateString()) {
+                newStreak += 1;
+                toast.success(`Streak Continued! Day ${newStreak} 🔥`);
+            } else {
+                newStreak = 1;
+                toast("New Streak Started! 🛡️");
+            }
+            await updateDoc(doc(db, "users", user.uid), { streak: newStreak, lastLogin: serverTimestamp() });
+        };
+        checkStreak();
+    }, [profile?.username]);
+
     const handleCompleteQuest = async (questId, questXp, questType, currentHp) => {
         if (!user || !profile) return;
 
-        // Boss Battle Logic
+        // 1. BOSS BATTLE DAMAGE LOGIC
         if (questType === "boss" && currentHp > 1) {
             setHittingBossId(questId);
             setTimeout(() => setHittingBossId(null), 400);
@@ -78,12 +102,22 @@ export default function Dashboard() {
             return;
         }
 
+        let lootAwarded = [];
+        let isLevelUp = false; // Track if level up happened
+
+        // 2. THE KILLING BLOW / BOSS COMPLETION
         if (questType === "boss" && currentHp === 1) {
             victorySound.play();
-            toast.success("THE BEAST HAS FALLEN! 🔥", { icon: "🏆" });
+
+            const potentialDrop = BOSS_LOOT_TABLE[profile.level];
+            const currentInventory = profile.inventory || [];
+
+            if (potentialDrop && !currentInventory.includes(potentialDrop.id)) {
+                lootAwarded.push(potentialDrop);
+            }
         }
 
-        // XP and Leveling Logic
+        // 3. XP AND LEVELING CALCULATION
         let newXp = (profile.xp || 0) + questXp;
         let newLevel = profile.level || 1;
         const xpReq = Math.floor(100 * Math.pow(1.2, newLevel - 1));
@@ -91,28 +125,42 @@ export default function Dashboard() {
         if (newXp >= xpReq) {
             newLevel++;
             newXp -= xpReq;
-            setShowLevelUp(true);
-        }
+            isLevelUp = true; // Mark that we leveled up
 
-        const updates = { xp: newXp, level: newLevel };
-        if (REWARD_TABLE[newLevel]) {
-            const inv = profile.inventory || [];
-            if (!inv.includes(REWARD_TABLE[newLevel].id)) {
-                updates.inventory = [...inv, REWARD_TABLE[newLevel].id];
-                toast(`New Item Unlocked: ${REWARD_TABLE[newLevel].name}`, { icon: '🛡️' });
+            if (REWARD_TABLE[newLevel]) {
+                lootAwarded.push(REWARD_TABLE[newLevel]);
             }
         }
 
-        await updateDoc(doc(db, "users", user.uid), updates);
+        // 4. TRIGGER OVERLAY
+        // Show overlay if leveled up OR if we found boss loot
+        if (isLevelUp || lootAwarded.length > 0) {
+            setUnlockedLoot(lootAwarded);
+            setShowLevelUp(true);
+        }
+
+        // 5. PREPARE FINAL UPDATE OBJECT
+        const userUpdates = { xp: newXp, level: newLevel };
+
+        if (lootAwarded.length > 0) {
+            const currentInv = profile.inventory || [];
+            const newItemIds = lootAwarded.map(item => item.id);
+            userUpdates.inventory = [...new Set([...currentInv, ...newItemIds])];
+        }
+
+        // 6. FIRESTORE EXECUTION
+        await updateDoc(doc(db, "users", user.uid), userUpdates);
         await updateDoc(doc(db, "quests", questId), {
             status: "completed",
             currentHp: 0,
             completedAt: serverTimestamp()
         });
 
-        if (!showLevelUp) toast.success(questType === 'boss' ? "Victory Achieved!" : "Quest Finished! +XP");
+        // Only show simple toast if the big overlay isn't opening
+        if (!isLevelUp && lootAwarded.length === 0) {
+            toast.success(questType === 'boss' ? "Victory Achieved!" : "Quest Finished! +XP");
+        }
     };
-
     const handleClearAllHistory = async () => {
         if (window.confirm("Are you sure? This will erase your entire legend forever! 📜🔥")) {
             try {
@@ -143,23 +191,18 @@ export default function Dashboard() {
 
     return (
         <div className={`dashboard-container ${isWorldShaking ? 'world-event-shake' : ''}`}>
-            {isWorldShaking && <div className="boss-spawn-overlay"><h1>BEWARE...</h1></div>}
-
-            {/* Toaster placed once at the top level */}
             <Toaster position="top-center" reverseOrder={false} />
-
-            <BossManager
-                user={user}
-                profile={profile}
-                activeQuests={quests}
-                setIsWorldShaking={setIsWorldShaking}
-            />
+            <BossManager user={user} profile={profile} activeQuests={quests} setIsWorldShaking={setIsWorldShaking} />
 
             <header className="stats-header">
                 <HeroAvatar inventory={profile?.inventory} level={profile?.level} />
                 <div className="hero-info">
                     <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user?.email}</p>
                     <h2>{profile?.username || "Adventurer"}</h2>
+                </div>
+                <div className="streak-badge">
+                    <span className="streak-fire">🔥</span>
+                    <span className="streak-count">{profile?.streak || 0} DAY STREAK</span>
                 </div>
                 <div className="xp-container">
                     <span>Level {profile?.level || 1}</span>
@@ -174,23 +217,12 @@ export default function Dashboard() {
             <main className="quest-section">
                 <div className="section-header">
                     <h3>Quest Board</h3>
-                    <button
-                        // className={`add-quest-pill ${filteredQuests.length === 0 ? 'pulse-prompt' : ''}`}
-                        className="add-quest-pill pulse-prompt"
-                        onClick={() => setIsModalOpen(true)}
-                    >
-                        + New Quest
-                    </button>
+                    <button className="add-quest-pill pulse-prompt" onClick={() => setIsModalOpen(true)}>+ New Quest</button>
                 </div>
-
                 <QuestFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-
                 <div className="quest-grid">
                     {filteredQuests.map((quest) => (
-                        <div key={quest.id}
-                            className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}
-                            data-boss-level={quest.level || 0}>
-
+                        <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}>
                             <div className="quest-info">
                                 <div className="card-meta">
                                     <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
@@ -204,7 +236,6 @@ export default function Dashboard() {
                                     </div>
                                 )}
                             </div>
-
                             <div className="quest-reward-zone">
                                 <span className="xp-badge">+{quest.xp} XP</span>
                                 <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp)}>
@@ -248,20 +279,18 @@ export default function Dashboard() {
                 </section>
             </main>
 
-            <QuestModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onAddQuest={(d) => {
-                    addDoc(collection(db, "quests"), { ...d, userId: user.uid, createdAt: serverTimestamp(), status: "active" });
-                    toast.success("Quest Summoned!");
-                }}
-                userLevel={profile?.level || 1}
-            />
+            <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddQuest={(d) => { addDoc(collection(db, "quests"), { ...d, userId: user.uid, createdAt: serverTimestamp(), status: "active" }); toast.success("Quest Summoned!"); }} userLevel={profile?.level || 1} />
 
             <LevelUpOverlay
+                // The key forces the component to RE-MOUNT and re-play the animation
+                key={unlockedLoot.length > 0 ? unlockedLoot[0].id : 'no-loot'}
                 isOpen={showLevelUp}
                 level={profile?.level}
-                onClose={() => setShowLevelUp(false)}
+                newItems={unlockedLoot}
+                onClose={() => {
+                    setShowLevelUp(false);
+                    setUnlockedLoot([]);
+                }}
             />
         </div>
     );

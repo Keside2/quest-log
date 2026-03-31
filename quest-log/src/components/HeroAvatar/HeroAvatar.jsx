@@ -1,30 +1,52 @@
 import React from 'react';
 import './HeroAvatar.css';
+import { BOSS_LOOT_TABLE } from "../../constants/loot";
+import { REWARD_TABLE } from "../../constants/rewards";
 
 export default function HeroAvatar({ inventory = [], level = 1 }) {
+    const getHeroForm = (lvl) => {
+        if (lvl >= 50) return { icon: "🧙‍♂️", rank: "mythic" };
+        if (lvl >= 20) return { icon: "👑", rank: "lord" };
+        if (lvl >= 10) return { icon: "🛡️", rank: "knight" };
+        if (lvl >= 5) return { icon: "⚔️", rank: "warrior" };
+        return { icon: "👤", rank: "apprentice" };
+    };
+
+    const hero = getHeroForm(level);
+
+    // Combine tables to find item data for the icons
+    const allLoot = { ...BOSS_LOOT_TABLE, ...REWARD_TABLE };
+
     return (
-        <div className="avatar-stage">
-            {/* Base Body - Always there */}
-            <div className="avatar-layer base-body">👤</div>
+        <div className={`avatar-container ${hero.rank}`}>
+            <div className="avatar-stage">
+                <div className="inner-glow"></div>
 
-            {/* Conditional Layers based on Inventory */}
-            {inventory.includes('basic_cloak') && (
-                <div className="avatar-layer cloak-layer">🧥</div>
-            )}
+                <div className="avatar-layer main-hero">
+                    {hero.icon}
+                </div>
 
-            {inventory.includes('iron_boots') && (
-                <div className="avatar-layer boots-layer">🥾</div>
-            )}
+                {/* NEW: Render the collected inventory items around the hero */}
+                <div className="inventory-slots">
+                    {inventory.map((itemId, index) => {
+                        // Find the item object using the ID from the array
+                        const itemData = Object.values(allLoot).find(item => item.id === itemId);
+                        return itemData ? (
+                            <div key={itemId} className={`equipped-item slot-${index}`}>
+                                {itemData.icon}
+                            </div>
+                        ) : null;
+                    })}
+                </div>
 
-            {inventory.includes('silver_blade') && (
-                <div className="avatar-layer weapon-layer">⚔️</div>
-            )}
+                {level >= 10 && <div className="avatar-layer aura-effect">✨</div>}
 
-            {inventory.includes('golden_aura') && (
-                <div className="avatar-layer aura-layer">✨</div>
-            )}
-
-            <div className="level-tag">LVL {level}</div>
+                <div className="level-badge">
+                    <span>LVL</span>
+                    <strong>{level}</strong>
+                </div>
+            </div>
+            <span className="rank-name">{hero.rank.toUpperCase()}</span>
         </div>
     );
 }
