@@ -93,7 +93,7 @@ export default function Dashboard() {
     const handleCompleteQuest = async (questId, questXp, questType, currentHp) => {
         if (!user || !profile) return;
 
-        // 1. BOSS BATTLE DAMAGE LOGIC
+        // 1. BOSS HP LOGIC (Damage but not dead)
         if (questType === "boss" && currentHp > 1) {
             setHittingBossId(questId);
             setTimeout(() => setHittingBossId(null), 400);
@@ -103,63 +103,56 @@ export default function Dashboard() {
         }
 
         let lootAwarded = [];
-        let isLevelUp = false; // Track if level up happened
+        let currentInv = profile.inventory || [];
 
-        // 2. THE KILLING BLOW / BOSS COMPLETION
+        // 2. BOSS KILL LOGIC (Check Loot Table first!)
         if (questType === "boss" && currentHp === 1) {
             victorySound.play();
+            // Look for loot based on the level of the boss you just fought
+            const bossDrop = BOSS_LOOT_TABLE[profile.level];
 
-            const potentialDrop = BOSS_LOOT_TABLE[profile.level];
-            const currentInventory = profile.inventory || [];
-
-            if (potentialDrop && !currentInventory.includes(potentialDrop.id)) {
-                lootAwarded.push(potentialDrop);
+            if (bossDrop && !currentInv.includes(bossDrop.id)) {
+                lootAwarded.push(bossDrop);
             }
         }
 
-        // 3. XP AND LEVELING CALCULATION
+        // 3. XP & LEVEL UP LOGIC (Calculated after Boss Drop check)
         let newXp = (profile.xp || 0) + questXp;
         let newLevel = profile.level || 1;
+        let isLevelUp = false;
         const xpReq = Math.floor(100 * Math.pow(1.2, newLevel - 1));
 
         if (newXp >= xpReq) {
             newLevel++;
             newXp -= xpReq;
-            isLevelUp = true; // Mark that we leveled up
+            isLevelUp = true;
 
+            // Check for separate Level Up reward (not the Boss loot)
             if (REWARD_TABLE[newLevel]) {
                 lootAwarded.push(REWARD_TABLE[newLevel]);
             }
         }
 
-        // 4. TRIGGER OVERLAY
-        // Show overlay if leveled up OR if we found boss loot
+        // 4. TRIGGER OVERLAY (Bundles Boss Loot + Level Up)
         if (isLevelUp || lootAwarded.length > 0) {
             setUnlockedLoot(lootAwarded);
             setShowLevelUp(true);
         }
 
-        // 5. PREPARE FINAL UPDATE OBJECT
+        // 5. UPDATE FIRESTORE
         const userUpdates = { xp: newXp, level: newLevel };
-
         if (lootAwarded.length > 0) {
-            const currentInv = profile.inventory || [];
             const newItemIds = lootAwarded.map(item => item.id);
+            // Combine current inventory + new items, removing any duplicates
             userUpdates.inventory = [...new Set([...currentInv, ...newItemIds])];
         }
 
-        // 6. FIRESTORE EXECUTION
         await updateDoc(doc(db, "users", user.uid), userUpdates);
         await updateDoc(doc(db, "quests", questId), {
             status: "completed",
             currentHp: 0,
             completedAt: serverTimestamp()
         });
-
-        // Only show simple toast if the big overlay isn't opening
-        if (!isLevelUp && lootAwarded.length === 0) {
-            toast.success(questType === 'boss' ? "Victory Achieved!" : "Quest Finished! +XP");
-        }
     };
     const handleClearAllHistory = async () => {
         if (window.confirm("Are you sure? This will erase your entire legend forever! 📜🔥")) {
@@ -282,10 +275,11 @@ export default function Dashboard() {
             <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddQuest={(d) => { addDoc(collection(db, "quests"), { ...d, userId: user.uid, createdAt: serverTimestamp(), status: "active" }); toast.success("Quest Summoned!"); }} userLevel={profile?.level || 1} />
 
             <LevelUpOverlay
-                // The key forces the component to RE-MOUNT and re-play the animation
                 key={unlockedLoot.length > 0 ? unlockedLoot[0].id : 'no-loot'}
                 isOpen={showLevelUp}
                 level={profile?.level}
+                isLevelUp={showLevelUp && (profile?.xp === 0 || unlockedLoot.some(item => item.isLevelReward))}
+                // Or simply pass a separate state if you tracked isLevelUp in handleCompleteQuest
                 newItems={unlockedLoot}
                 onClose={() => {
                     setShowLevelUp(false);

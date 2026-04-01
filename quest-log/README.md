@@ -35,13 +35,13 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 - [x] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements. ✅
 - [x] **Screen Shake:** Impact effects for Boss attacks. ✅
 - [x] **Evolutionary Avatar:** Visual "Hero" character that transforms at level milestones. ✅
-- [ ] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.
-- [ ] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
+- [x] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.
+- [x] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
 
 ### Phase 3: Polish & Sound
 
 - [ ] **Level Logic:** Mathematical formula for scaling Level-Up thresholds.
-- [ ] **Habit Streaks:** Logic for daily login bonuses and task consistency.
+- [x] **Habit Streaks:** Logic for daily login bonuses and task consistency. ✅
 - [ ] **Sound Effects:** 8-bit audio cues for quest completion and UI interaction.
 
 ---
