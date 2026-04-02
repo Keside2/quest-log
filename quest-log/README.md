@@ -35,12 +35,12 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 - [x] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements. ✅
 - [x] **Screen Shake:** Impact effects for Boss attacks. ✅
 - [x] **Evolutionary Avatar:** Visual "Hero" character that transforms at level milestones. ✅
-- [x] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.
+- [x] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.✅
 - [x] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
 
 ### Phase 3: Polish & Sound
 
-- [ ] **Level Logic:** Mathematical formula for scaling Level-Up thresholds.
+- [x] Level Logic: Mathematical formula for scaling Level-Up thresholds ($100 \times 1.2^{L-1}$). ✅
 - [x] **Habit Streaks:** Logic for daily login bonuses and task consistency. ✅
 - [ ] **Sound Effects:** 8-bit audio cues for quest completion and UI interaction.
 
@@ -57,6 +57,19 @@ The user's avatar physically evolves as they grow stronger.
 | **Knight**     | 10 - 19 | 🛡️   | The Guardian   |
 | **Lord**       | 20 - 49 | 👑   | The Sovereign  |
 | **Mythic**     | 50+     | 🧙‍♂️   | The Eternal    |
+
+---
+
+## 💎 The Arsenal (Boss Loot Table)
+
+Players earn unique gear by defeating Bosses at specific level milestones.
+
+| Level  | Item             | Icon | Description                                      |
+| :----- | :--------------- | :--- | :----------------------------------------------- |
+| **5**  | Iron Boots       | 🥾   | Heavy plating for steady advancement.            |
+| **10** | Wanderer's Cloak | 🧥   | A rugged cloak for seasoned travelers.           |
+| **15** | Silver Blade     | ⚔️   | A sharp edge for cutting through technical debt. |
+| **20** | Ethereal Aura    | ✨   | The glow of a true Sovereign.                    |
 
 ---
 

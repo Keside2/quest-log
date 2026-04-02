@@ -21,6 +21,7 @@ import HeroAvatar from "../../components/HeroAvatar/HeroAvatar";
 import QuestFilter from "../../components/QuestFilter/QuestFilter";
 import BossManager from "../../components/BossManager/BossManager";
 import { BOSS_LOOT_TABLE } from "../../constants/loot"; // Imported loot table
+import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -37,6 +38,7 @@ export default function Dashboard() {
     const [activeFilter, setActiveFilter] = useState('All');
     const [hittingBossId, setHittingBossId] = useState(null);
     const [isWorldShaking, setIsWorldShaking] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     // Pagination & XP Limits
     const [currentPage, setCurrentPage] = useState(1);
@@ -155,15 +157,13 @@ export default function Dashboard() {
         });
     };
     const handleClearAllHistory = async () => {
-        if (window.confirm("Are you sure? This will erase your entire legend forever! 📜🔥")) {
-            try {
-                const deletePromises = completedQuests.map(q => deleteDoc(doc(db, "quests", q.id)));
-                await Promise.all(deletePromises);
-                setCurrentPage(1);
-                toast.success("History wiped clean!");
-            } catch (err) {
-                toast.error("Failed to clear some items.");
-            }
+        try {
+            const deletePromises = completedQuests.map(q => deleteDoc(doc(db, "quests", q.id)));
+            await Promise.all(deletePromises);
+            setCurrentPage(1);
+            toast.success("History wiped clean!");
+        } catch (err) {
+            toast.error("Failed to clear some items.");
         }
     };
 
@@ -243,7 +243,9 @@ export default function Dashboard() {
                     <div className="section-header">
                         <h3>Quest History ({completedQuests.length})</h3>
                         {completedQuests.length > 0 && (
-                            <button onClick={handleClearAllHistory} className="clear-all-btn">Clear All</button>
+                            <button onClick={() => setIsConfirmOpen(true)} className="clear-all-btn">
+                                Clear All
+                            </button>
                         )}
                     </div>
                     <div className="history-list">
@@ -285,6 +287,14 @@ export default function Dashboard() {
                     setShowLevelUp(false);
                     setUnlockedLoot([]);
                 }}
+            />
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={handleClearAllHistory}
+                title="ERASE LEGEND?"
+                message="Are you sure? This will burn your entire quest history forever! 📜🔥"
             />
         </div>
     );
