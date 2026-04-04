@@ -156,6 +156,7 @@ export default function Dashboard() {
             completedAt: serverTimestamp()
         });
     };
+
     const handleClearAllHistory = async () => {
         try {
             const deletePromises = completedQuests.map(q => deleteDoc(doc(db, "quests", q.id)));
@@ -213,30 +214,46 @@ export default function Dashboard() {
                     <button className="add-quest-pill pulse-prompt" onClick={() => setIsModalOpen(true)}>+ New Quest</button>
                 </div>
                 <QuestFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                {/* UPDATED QUEST GRID SECTION */}
                 <div className="quest-grid">
-                    {filteredQuests.map((quest) => (
-                        <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}>
-                            <div className="quest-info">
-                                <div className="card-meta">
-                                    <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
-                                    <span className="duration-label">⏳ {quest.duration || 30}m</span>
-                                </div>
-                                <h4>{quest.title}</h4>
-                                {quest.type === 'boss' && (
-                                    <div className="boss-hp-bar">
-                                        <div className="hp-fill" style={{ width: `${(quest.currentHp / quest.hp) * 100}%` }}></div>
-                                        <small>{quest.currentHp}/{quest.hp} HP</small>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="quest-reward-zone">
-                                <span className="xp-badge">+{quest.xp} XP</span>
-                                <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp)}>
-                                    {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
-                                </button>
-                            </div>
+                    {filteredQuests.length === 0 ? (
+                        <div className="empty-dashboard-state">
+                            <div className="empty-shield-icon">🛡️</div>
+                            <h4>Your Journey Begins Here!</h4>
+                            <p>Every Legend starts with a single quest. Add your first task to begin earning XP and evolving your Hero.</p>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="first-quest-btn"
+                            >
+                                + Summon First Quest
+                            </button>
                         </div>
-                    ))}
+                    ) : (
+                        filteredQuests.map((quest) => (
+                            <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}>
+                                {/* ... keep your existing quest-card content */}
+                                <div className="quest-info">
+                                    <div className="card-meta">
+                                        <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
+                                        <span className="duration-label">⏳ {quest.duration || 30}m</span>
+                                    </div>
+                                    <h4>{quest.title}</h4>
+                                    {quest.type === 'boss' && (
+                                        <div className="boss-hp-bar">
+                                            <div className="hp-fill" style={{ width: `${(quest.currentHp / quest.hp) * 100}%` }}></div>
+                                            <small>{quest.currentHp}/{quest.hp} HP</small>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="quest-reward-zone">
+                                    <span className="xp-badge">+{quest.xp} XP</span>
+                                    <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp)}>
+                                        {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 <section className="history-section">
