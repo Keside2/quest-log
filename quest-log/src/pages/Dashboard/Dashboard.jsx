@@ -22,6 +22,7 @@ import QuestFilter from "../../components/QuestFilter/QuestFilter";
 import BossManager from "../../components/BossManager/BossManager";
 import { BOSS_LOOT_TABLE } from "../../constants/loot"; // Imported loot table
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
+import HonorModal from "../../components/HonorModal/HonorModal";
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -39,6 +40,8 @@ export default function Dashboard() {
     const [hittingBossId, setHittingBossId] = useState(null);
     const [isWorldShaking, setIsWorldShaking] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [isHonorOpen, setIsHonorOpen] = useState(false);
+    const [activeQuestForHonor, setActiveQuestForHonor] = useState(null);
 
     // Pagination & XP Limits
     const [currentPage, setCurrentPage] = useState(1);
@@ -92,7 +95,7 @@ export default function Dashboard() {
         checkStreak();
     }, [profile?.username]);
 
-    const handleCompleteQuest = async (questId, questXp, questType, currentHp) => {
+    const handleCompleteQuest = async (questId, questXp, questType, currentHp, questTitle) => {
         if (!user || !profile) return;
 
         // 1. BOSS HP LOGIC (Damage but not dead)
@@ -104,22 +107,39 @@ export default function Dashboard() {
             return;
         }
 
+        // 2. OPEN HONOR MODAL (For normal quests or final boss kill)
+        // We "save" the quest info into state so Part B knows what to do later
+        setActiveQuestForHonor({
+            id: questId,
+            xp: questXp,
+            type: questType,
+            title: questTitle,
+            currentHp: currentHp
+        });
+        setIsHonorOpen(true);
+    };
+
+
+    const processHonorSuccess = async (proofOfWork) => {
+        // We get the info we "saved" in Part A
+        if (!activeQuestForHonor || !user || !profile) return;
+
+        const { id, xp, type, currentHp } = activeQuestForHonor;
+
         let lootAwarded = [];
         let currentInv = profile.inventory || [];
 
-        // 2. BOSS KILL LOGIC (Check Loot Table first!)
-        if (questType === "boss" && currentHp === 1) {
+        // 2. BOSS KILL LOGIC
+        if (type === "boss" && currentHp === 1) {
             victorySound.play();
-            // Look for loot based on the level of the boss you just fought
             const bossDrop = BOSS_LOOT_TABLE[profile.level];
-
             if (bossDrop && !currentInv.includes(bossDrop.id)) {
                 lootAwarded.push(bossDrop);
             }
         }
 
-        // 3. XP & LEVEL UP LOGIC (Calculated after Boss Drop check)
-        let newXp = (profile.xp || 0) + questXp;
+        // 3. XP & LEVEL UP LOGIC
+        let newXp = (profile.xp || 0) + xp;
         let newLevel = profile.level || 1;
         let isLevelUp = false;
         const xpReq = Math.floor(100 * Math.pow(1.2, newLevel - 1));
@@ -128,14 +148,12 @@ export default function Dashboard() {
             newLevel++;
             newXp -= xpReq;
             isLevelUp = true;
-
-            // Check for separate Level Up reward (not the Boss loot)
             if (REWARD_TABLE[newLevel]) {
                 lootAwarded.push(REWARD_TABLE[newLevel]);
             }
         }
 
-        // 4. TRIGGER OVERLAY (Bundles Boss Loot + Level Up)
+        // 4. TRIGGER OVERLAY (Level Up / Loot)
         if (isLevelUp || lootAwarded.length > 0) {
             setUnlockedLoot(lootAwarded);
             setShowLevelUp(true);
@@ -145,16 +163,26 @@ export default function Dashboard() {
         const userUpdates = { xp: newXp, level: newLevel };
         if (lootAwarded.length > 0) {
             const newItemIds = lootAwarded.map(item => item.id);
-            // Combine current inventory + new items, removing any duplicates
             userUpdates.inventory = [...new Set([...currentInv, ...newItemIds])];
         }
 
-        await updateDoc(doc(db, "users", user.uid), userUpdates);
-        await updateDoc(doc(db, "quests", questId), {
-            status: "completed",
-            currentHp: 0,
-            completedAt: serverTimestamp()
-        });
+        try {
+            await updateDoc(doc(db, "users", user.uid), userUpdates);
+            await updateDoc(doc(db, "quests", id), {
+                status: "completed",
+                currentHp: 0,
+                proof: proofOfWork, // THE PROOF FROM MODAL!
+                completedAt: serverTimestamp()
+            });
+
+            // Close modal and reset
+            setIsHonorOpen(false);
+            setActiveQuestForHonor(null);
+            toast.success("Honor Verified. XP Awarded! ✨");
+        } catch (error) {
+            console.error("Error completing quest:", error);
+            toast.error("The gods rejected your proof. Try again.");
+        }
     };
 
     const handleClearAllHistory = async () => {
@@ -247,7 +275,10 @@ export default function Dashboard() {
                                 </div>
                                 <div className="quest-reward-zone">
                                     <span className="xp-badge">+{quest.xp} XP</span>
-                                    <button className="complete-btn" onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp)}>
+                                    <button
+                                        className="complete-btn"
+                                        onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp, quest.title)}
+                                    >
                                         {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
                                     </button>
                                 </div>
@@ -273,7 +304,21 @@ export default function Dashboard() {
                                 <div key={q.id} className="history-item">
                                     <div className="history-info">
                                         <span className="check-icon">✔</span>
-                                        <p>{q.title}</p>
+                                        <div>
+                                            <p><strong>{q.title}</strong></p>
+                                            {/* NEW: Show proof if it exists */}
+                                            {q.proof && (
+                                                <small style={{
+                                                    display: 'block',
+                                                    fontStyle: 'italic',
+                                                    color: '#94a3b8',
+                                                    fontSize: '0.75rem',
+                                                    marginTop: '2px'
+                                                }}>
+                                                    📜 {q.proof}
+                                                </small>
+                                            )}
+                                        </div>
                                     </div>
                                     <button className="delete-hist-btn" onClick={() => handleDeleteHistoryItem(q.id)}>🗑️</button>
                                 </div>
@@ -312,6 +357,13 @@ export default function Dashboard() {
                 onConfirm={handleClearAllHistory}
                 title="ERASE LEGEND?"
                 message="Are you sure? This will burn your entire quest history forever! 📜🔥"
+            />
+
+            <HonorModal
+                isOpen={isHonorOpen}
+                questTitle={activeQuestForHonor?.title}
+                onClose={() => setIsHonorOpen(false)}
+                onConfirm={processHonorSuccess}
             />
         </div>
     );
