@@ -44,6 +44,8 @@ export default function Auth() {
             await loginWithGithub();
             navigate("/");
         } catch (err) {
+
+            alert("GITHUB ERROR: " + err.code + " - " + err.message);
             // If the user just closed the popup manually, don't show a scary error
             if (err.code !== 'auth/popup-closed-by-user') {
                 setError("Failed to link GitHub account.");
