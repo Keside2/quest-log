@@ -111,3 +111,52 @@
   text-decoration: underline;
 }
 
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #64748b;
+}
+
+.auth-divider::before, .auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #334155;
+}
+
+.auth-divider span {
+    padding: 0 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.github-btn {
+    width: 100%;
+    padding: 12px;
+    background: #24292f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.github-btn:hover {
+    background: #1a1e22;
+}
+
+.github-btn img {
+    width: 20px;
+    filter: invert(1); /* Makes the black logo white */
+}
+
+.error-msg { color: #ff4444; margin-bottom: 1rem; font-size: 0.9rem; }
+.success-msg { color: #10b981; margin-bottom: 1rem; font-size: 0.9rem; }
+.forgot-pw { text-align: right; margin-top: -10px; margin-bottom: 15px; }
+.forgot-pw span { color: #38bdf8; font-size: 0.8rem; cursor: pointer; text-decoration: underline; }

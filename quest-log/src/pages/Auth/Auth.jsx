@@ -9,9 +9,10 @@ export default function Auth() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [message, setMessage] = useState(""); // For success messages
+    const [message, setMessage] = useState("");
 
-    const { login, signUp, resetPassword } = useAuth(); // Added resetPassword
+    // 1. ADD loginWithGithub HERE
+    const { login, signUp, resetPassword, loginWithGithub } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -26,16 +27,33 @@ export default function Auth() {
             }
             navigate("/");
         } catch (err) {
-            if (err.code === 'auth/email-already-in-use') {
-                setError("This email is already registered. Try logging in!");
-            } else {
-                setError("Invalid credentials or account error.");
-            }
+            setError("Invalid credentials or account error.");
             console.error(err);
         }
     };
 
-    // Handler for Forgot Password
+    // 2. CREATE THE GITHUB HANDLER
+    const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+    const handleGithubLogin = async () => {
+        if (isAuthenticating) return; // Prevent double clicks
+
+        setIsAuthenticating(true);
+        setError("");
+        try {
+            await loginWithGithub();
+            navigate("/");
+        } catch (err) {
+            // If the user just closed the popup manually, don't show a scary error
+            if (err.code !== 'auth/popup-closed-by-user') {
+                setError("Failed to link GitHub account.");
+            }
+            console.error(err);
+        } finally {
+            setIsAuthenticating(false);
+        }
+    };
+
     const handleForgotPassword = async () => {
         if (!email) {
             setError("Please enter your email address first.");
@@ -46,7 +64,7 @@ export default function Auth() {
             setMessage("Check your inbox for password reset instructions!");
             setError("");
         } catch (err) {
-            setError("Failed to send reset email. Check if the email is correct.");
+            setError("Failed to send reset email.");
         }
     };
 
@@ -56,51 +74,30 @@ export default function Auth() {
                 <h2>{isLogin ? "Welcome Back, Hero" : "Begin Your Quest"}</h2>
                 <p>{isLogin ? "The Tavern awaits your return." : "Create an account to track your XP."}</p>
 
-                {error && <div style={{ color: "#ff4444", marginBottom: "1rem" }}>{error}</div>}
-                {message && <div style={{ color: "#10b981", marginBottom: "1rem" }}>{message}</div>}
+                {error && <div className="error-msg">{error}</div>}
+                {message && <div className="success-msg">{message}</div>}
 
                 <form className="auth-form" onSubmit={handleSubmit}>
                     {!isLogin && (
                         <div className="input-group">
-                            <label>Character Name (Username)</label>
-                            <input
-                                type="text"
-                                placeholder="e.g. ShadowCoder"
-                                required
-                                onChange={(e) => setUsername(e.target.value)}
-                            />
+                            <label>Character Name</label>
+                            <input type="text" placeholder="e.g. ShadowCoder" required onChange={(e) => setUsername(e.target.value)} />
                         </div>
                     )}
 
                     <div className="input-group">
                         <label>Email Address</label>
-                        <input
-                            type="email"
-                            placeholder="hero@questlog.com"
-                            required
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
+                        <input type="email" placeholder="hero@questlog.com" required onChange={(e) => setEmail(e.target.value)} />
                     </div>
 
                     <div className="input-group">
                         <label>Password</label>
-                        <input
-                            type="password"
-                            placeholder="••••••••"
-                            required={isLogin} // Only strictly required for Login/Signup
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <input type="password" placeholder="••••••••" required={isLogin} onChange={(e) => setPassword(e.target.value)} />
                     </div>
 
-                    {/* Forgot Password Link */}
                     {isLogin && (
-                        <div style={{ textAlign: "right", marginTop: "-10px", marginBottom: "15px" }}>
-                            <span
-                                onClick={handleForgotPassword}
-                                style={{ color: "#38bdf8", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
-                            >
-                                Forgot Password?
-                            </span>
+                        <div className="forgot-pw">
+                            <span onClick={handleForgotPassword}>Forgot Password?</span>
                         </div>
                     )}
 
@@ -108,6 +105,16 @@ export default function Auth() {
                         {isLogin ? "Enter Tavern" : "Start Adventure"}
                     </button>
                 </form>
+
+                {/* 3. ADD THE GITHUB BUTTON SECTION */}
+                <div className="auth-divider">
+                    <span>OR</span>
+                </div>
+
+                <button type="button" onClick={handleGithubLogin} className="github-btn">
+                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" />
+                    Continue with GitHub
+                </button>
 
                 <div className="toggle-auth">
                     {isLogin ? "New to the realm?" : "Already have a character?"}{" "}
