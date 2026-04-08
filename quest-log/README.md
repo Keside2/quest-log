@@ -101,7 +101,7 @@ To handle large projects, QuestLog implements **Scaling Bosses**:
 
 ## 🛡️ Future Evolution (The Legendary Tier)
 
-- [ ] **The Honor System:** Optional "Proof of Work" field required to claim XP.
+- [x] **The Honor System:** Optional "Proof of Work" field required to claim XP.
 - [ ] **Automated Quests:** GitHub API integration for XP via Commits/PRs.
 - [ ] **Social Tavern:** View friend's avatars and compete on a leaderboard.
 
