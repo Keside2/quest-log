@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext/AuthContext";
 import { useNavigate } from "react-router-dom";
+import Loader from "../../components/Loader/Loader";
 import "./Auth.css";
 
 export default function Auth() {
@@ -10,6 +11,7 @@ export default function Auth() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+    const { loading } = useAuth();
 
     // 1. ADD loginWithGithub HERE
     const { login, signUp, resetPassword, loginWithGithub } = useAuth();
@@ -69,6 +71,9 @@ export default function Auth() {
         }
     };
 
+    if (loading) {
+        return <Loader message="Authenticating with the Oracle..." />;
+    }
     return (
         <div className="auth-container">
             <div className="auth-card">

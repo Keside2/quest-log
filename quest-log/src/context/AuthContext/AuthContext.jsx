@@ -31,12 +31,14 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const handleRedirect = async () => {
             try {
+                // Set loading to true while checking redirect
+                setLoading(true);
                 const result = await getRedirectResult(auth);
+
                 if (result) {
                     const user = result.user;
                     const credential = GithubAuthProvider.credentialFromResult(result);
                     const token = credential.accessToken;
-                    // Get the GitHub Username from the result
                     const githubUsername = result._tokenResponse.screenName;
 
                     const userRef = doc(db, "users", user.uid);
@@ -45,7 +47,7 @@ export function AuthProvider({ children }) {
                     if (!userSnap.exists()) {
                         await setDoc(userRef, {
                             username: user.displayName || "Adventurer",
-                            githubUsername: githubUsername, // Saved for Day 87!
+                            githubUsername: githubUsername,
                             email: user.email,
                             level: 1,
                             xp: 0,
@@ -53,19 +55,18 @@ export function AuthProvider({ children }) {
                             createdAt: new Date()
                         });
                     } else {
-                        // Update both token and username just in case
                         await updateDoc(userRef, {
                             githubToken: token,
                             githubUsername: githubUsername
                         });
                     }
+                    // Redirect will naturally trigger onAuthStateChanged
                 }
             } catch (error) {
-                console.error("Redirect Result Error:", error);
-                // Alerting for mobile debugging if needed
-                if (error.code !== 'auth/popup-closed-by-user') {
-                    // alert("Auth Error: " + error.message);
-                }
+                console.error("Auth Redirect Error:", error);
+                toast.error("GitHub handshake failed. Try again with VPN.");
+            } finally {
+                setLoading(false);
             }
         };
 
