@@ -6,11 +6,12 @@ import {
     signOut,
     onAuthStateChanged,
     sendPasswordResetEmail,
-    // NEW IMPORTS
     GithubAuthProvider,
-    signInWithPopup
+    signInWithRedirect,
+    getRedirectResult
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -18,87 +19,84 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // --- NEW: GITHUB LOGIN FUNCTION ---
+    // 1. GITHUB LOGIN (REDIRECT)
     async function loginWithGithub() {
         const provider = new GithubAuthProvider();
-        // Request 'repo' scope so we can read your commit history later
         provider.addScope('repo');
+        // We set loading true here so the loader shows immediately
+        setLoading(true);
+        return await signInWithRedirect(auth, provider);
+    }
 
-        try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+    // 2. CATCH THE REDIRECT RESULT & SAVE DATA
+    useEffect(() => {
+        const handleRedirect = async () => {
+            try {
+                const result = await getRedirectResult(auth);
 
-            // This is the "Magic Key" for the GitHub API
-            const credential = GithubAuthProvider.credentialFromResult(result);
-            const token = credential.accessToken;
+                if (result) {
+                    const user = result.user;
+                    const credential = GithubAuthProvider.credentialFromResult(result);
+                    const token = credential.accessToken;
 
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
+                    // CRITICAL FIX: Extract the GitHub screen name (username)
+                    const githubUsername = result._tokenResponse.screenName;
 
-            if (!userSnap.exists()) {
-                // First time GitHub login: Create the profile
-                await setDoc(userRef, {
-                    username: user.displayName || "Adventurer",
-                    email: user.email,
-                    level: 1,
-                    xp: 0,
-                    githubToken: token, // Save the token for Day 87!
-                    createdAt: new Date()
-                });
-            } else {
-                // Returning user: Just update the token (they expire or change)
-                await updateDoc(userRef, { githubToken: token });
+                    const userRef = doc(db, "users", user.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    if (!userSnap.exists()) {
+                        await setDoc(userRef, {
+                            username: user.displayName || "Adventurer",
+                            githubUsername: githubUsername, // Saved for Syncing!
+                            email: user.email,
+                            level: 1,
+                            xp: 0,
+                            githubToken: token,
+                            createdAt: new Date()
+                        });
+                    } else {
+                        // Update both so the Sync button finds them
+                        await updateDoc(userRef, {
+                            githubToken: token,
+                            githubUsername: githubUsername
+                        });
+                    }
+                    toast.success("GitHub Linked successfully!");
+                }
+            } catch (error) {
+                console.error("Auth Redirect Error:", error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    // toast.error("Handshake failed. Use VPN!");
+                }
+            } finally {
+                // We only stop loading once the redirect check is DONE
+                setLoading(false);
             }
+        };
 
-            return result;
-        } catch (error) {
-            console.error("GitHub Login Error:", error);
-            throw error;
-        }
-    }
+        handleRedirect();
+    }, []);
 
-    // Existing functions...
-    async function signUp(email, password, username) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await setDoc(doc(db, "users", user.uid), {
-            username: username,
-            email: email,
-            level: 1,
-            xp: 0,
-            createdAt: new Date()
-        });
-        return userCredential;
-    }
-
-    function login(email, password) {
-        return signInWithEmailAndPassword(auth, email, password);
-    }
-
-    function logout() {
-        return signOut(auth);
-    }
-
-    function resetPassword(email) {
-        return sendPasswordResetEmail(auth, email);
-    }
-
+    // 3. LISTEN FOR AUTH STATE
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
-            setLoading(false);
+            // Don't set loading to false here if we are still checking redirect
+            if (!window.location.search.includes('code=')) {
+                setLoading(false);
+            }
         });
         return () => unsubscribe();
     }, []);
 
+    const value = { user, loading, signUp: (e, p, u) => createUserWithEmailAndPassword(auth, e, p), login: (e, p) => signInWithEmailAndPassword(auth, e, p), logout: () => signOut(auth), resetPassword: (e) => sendPasswordResetEmail(auth, e), loginWithGithub };
+
     return (
-        // Added loginWithGithub to the value prop
-        <AuthContext.Provider value={{ user, signUp, login, logout, resetPassword, loginWithGithub }}>
-            {!loading && children}
+        <AuthContext.Provider value={value}>
+            {children}
         </AuthContext.Provider>
     );
 }
 
-export function useAuth() {
-    return useContext(AuthContext);
-}
+export const useAuth = () => useContext(AuthContext);
