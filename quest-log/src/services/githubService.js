@@ -13,26 +13,32 @@ export const fetchGithubCommits = async (githubToken, username) => {
 
         const events = await response.json();
 
-        // Fix: Check for pushes within the last 24 hours to avoid timezone issues
+        // Check for pushes within the last 24 hours
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
         const dailyCommits = events.filter(event => {
             const eventDate = new Date(event.created_at);
+            // ONLY process PushEvents that happened in the last 24h
             return event.type === "PushEvent" && eventDate > twentyFourHoursAgo;
         });
 
         let commitCount = 0;
         dailyCommits.forEach(event => {
-            commitCount += event.payload.commits.length;
+            // SAFE CHECK: Use ?. to prevent the "undefined" error
+            // Also check if payload.commits actually exists
+            if (event.payload && event.payload.commits) {
+                commitCount += event.payload.commits.length;
+            }
         });
 
+        console.log(`Found ${commitCount} commits for ${username}`);
         return commitCount;
     } catch (error) {
+        // This will now catch actual network errors instead of code crashes
         console.error("Github Service Error:", error);
         return 0;
     }
 };
-
 // --- NEW: THE QUADRATIC LEVELING FORMULA ---
 export const calculateLevelInfo = (totalXP) => {
     // Level = sqrt(XP / 100) + 1
