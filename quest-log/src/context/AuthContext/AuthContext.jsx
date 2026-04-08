@@ -11,7 +11,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, increment } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -36,6 +36,8 @@ export function AuthProvider({ children }) {
                     const user = result.user;
                     const credential = GithubAuthProvider.credentialFromResult(result);
                     const token = credential.accessToken;
+                    // Get the GitHub Username from the result
+                    const githubUsername = result._tokenResponse.screenName;
 
                     const userRef = doc(db, "users", user.uid);
                     const userSnap = await getDoc(userRef);
@@ -43,6 +45,7 @@ export function AuthProvider({ children }) {
                     if (!userSnap.exists()) {
                         await setDoc(userRef, {
                             username: user.displayName || "Adventurer",
+                            githubUsername: githubUsername, // Saved for Day 87!
                             email: user.email,
                             level: 1,
                             xp: 0,
@@ -50,8 +53,11 @@ export function AuthProvider({ children }) {
                             createdAt: new Date()
                         });
                     } else {
-                        // Option 2 at work: If they exist, just update the token!
-                        await updateDoc(userRef, { githubToken: token });
+                        // Update both token and username just in case
+                        await updateDoc(userRef, {
+                            githubToken: token,
+                            githubUsername: githubUsername
+                        });
                     }
                 }
             } catch (error) {
@@ -110,3 +116,17 @@ export function AuthProvider({ children }) {
 export function useAuth() {
     return useContext(AuthContext);
 }
+
+export const syncXP = async (userId, commitCount) => {
+    const xpEarned = commitCount * 10;
+    const userRef = doc(db, "users", userId);
+
+    if (xpEarned > 0) {
+        await updateDoc(userRef, {
+            xp: increment(xpEarned),
+            // We can add logic here to check if they should level up
+        });
+        return xpEarned;
+    }
+    return 0;
+};

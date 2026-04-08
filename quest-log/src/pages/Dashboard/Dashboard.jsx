@@ -23,6 +23,7 @@ import BossManager from "../../components/BossManager/BossManager";
 import { BOSS_LOOT_TABLE } from "../../constants/loot"; // Imported loot table
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import HonorModal from "../../components/HonorModal/HonorModal";
+import { fetchGithubCommits, calculateLevelInfo } from "../../services/githubService";
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -42,11 +43,12 @@ export default function Dashboard() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isHonorOpen, setIsHonorOpen] = useState(false);
     const [activeQuestForHonor, setActiveQuestForHonor] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // Pagination & XP Limits
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
-    const currentXpLimit = profile ? Math.floor(100 * Math.pow(1.2, (profile.level || 1) - 1)) : 100;
+    const currentXpLimit = profile ? Math.pow(profile.level || 1, 2) * 100 : 100;
 
     // Listen to User Profile
     useEffect(() => {
@@ -211,12 +213,62 @@ export default function Dashboard() {
     const totalPages = Math.ceil(completedQuests.length / itemsPerPage);
     const currentItems = completedQuests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+    const handleSyncGitHub = async () => {
+        if (!profile?.githubToken || !profile?.githubUsername) {
+            return toast.error("Link GitHub in Settings first!");
+        }
+
+        setIsSyncing(true);
+        const toastId = toast.loading("Oracle is checking your commits...");
+
+        try {
+            // 1. Fetch Commits
+            const commits = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
+
+            if (commits === 0) {
+                toast.dismiss(toastId);
+                return toast("No new commits found for today. Get to work, Adventurer!", { icon: '⚒️' });
+            }
+
+            // 2. Calculate XP (10 XP per commit)
+            const earnedXp = commits * 10;
+            const newTotalXp = (profile.xp || 0) + earnedXp;
+
+            // 3. Check for Level Up using the quadratic formula
+            const { currentLevel } = calculateLevelInfo(newTotalXp);
+
+            const userRef = doc(db, "users", user.uid);
+            await updateDoc(userRef, {
+                xp: newTotalXp,
+                level: currentLevel
+            });
+
+            if (currentLevel > profile.level) {
+                setShowLevelUp(true);
+                victorySound.play();
+            }
+
+            toast.success(`Synced! +${earnedXp} XP from ${commits} commits!`, { id: toastId });
+        } catch (err) {
+            toast.error("The Oracle is unreachable. Check your VPN!", { id: toastId });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     return (
         <div className={`dashboard-container ${isWorldShaking ? 'world-event-shake' : ''}`}>
             <Toaster position="top-center" reverseOrder={false} />
             <BossManager user={user} profile={profile} activeQuests={quests} setIsWorldShaking={setIsWorldShaking} />
 
             <header className="stats-header">
+                <button
+                    className={`sync-btn ${isSyncing ? 'spinning' : ''}`}
+                    onClick={handleSyncGitHub}
+                    disabled={isSyncing}
+                >
+                    🔄 Sync GitHub
+                </button>
                 <HeroAvatar inventory={profile?.inventory} level={profile?.level} />
                 <div className="hero-info">
                     <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user?.email}</p>
