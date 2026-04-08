@@ -6,12 +6,11 @@ import {
     signOut,
     onAuthStateChanged,
     sendPasswordResetEmail,
+    // NEW IMPORTS
     GithubAuthProvider,
-    // Using Redirect for better network stability
-    signInWithRedirect,
-    getRedirectResult
+    signInWithPopup
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -19,60 +18,46 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // --- GITHUB LOGIN (REDIRECT) ---
+    // --- NEW: GITHUB LOGIN FUNCTION ---
     async function loginWithGithub() {
         const provider = new GithubAuthProvider();
-        // Permission to see repos for Day 87!
+        // Request 'repo' scope so we can read your commit history later
         provider.addScope('repo');
-        return await signInWithRedirect(auth, provider);
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // This is the "Magic Key" for the GitHub API
+            const credential = GithubAuthProvider.credentialFromResult(result);
+            const token = credential.accessToken;
+
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                // First time GitHub login: Create the profile
+                await setDoc(userRef, {
+                    username: user.displayName || "Adventurer",
+                    email: user.email,
+                    level: 1,
+                    xp: 0,
+                    githubToken: token, // Save the token for Day 87!
+                    createdAt: new Date()
+                });
+            } else {
+                // Returning user: Just update the token (they expire or change)
+                await updateDoc(userRef, { githubToken: token });
+            }
+
+            return result;
+        } catch (error) {
+            console.error("GitHub Login Error:", error);
+            throw error;
+        }
     }
 
-    // --- CATCH THE REDIRECT RESULT ---
-    useEffect(() => {
-        const handleRedirect = async () => {
-            try {
-                const result = await getRedirectResult(auth);
-                if (result) {
-                    const user = result.user;
-                    const credential = GithubAuthProvider.credentialFromResult(result);
-                    const token = credential.accessToken;
-                    // Get the GitHub Username from the result
-                    const githubUsername = result._tokenResponse.screenName;
-
-                    const userRef = doc(db, "users", user.uid);
-                    const userSnap = await getDoc(userRef);
-
-                    if (!userSnap.exists()) {
-                        await setDoc(userRef, {
-                            username: user.displayName || "Adventurer",
-                            githubUsername: githubUsername, // Saved for Day 87!
-                            email: user.email,
-                            level: 1,
-                            xp: 0,
-                            githubToken: token,
-                            createdAt: new Date()
-                        });
-                    } else {
-                        // Update both token and username just in case
-                        await updateDoc(userRef, {
-                            githubToken: token,
-                            githubUsername: githubUsername
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Redirect Result Error:", error);
-                // Alerting for mobile debugging if needed
-                if (error.code !== 'auth/popup-closed-by-user') {
-                    // alert("Auth Error: " + error.message);
-                }
-            }
-        };
-
-        handleRedirect();
-    }, []);
-
-    // Email/Password Sign Up
+    // Existing functions...
     async function signUp(email, password, username) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -107,6 +92,7 @@ export function AuthProvider({ children }) {
     }, []);
 
     return (
+        // Added loginWithGithub to the value prop
         <AuthContext.Provider value={{ user, signUp, login, logout, resetPassword, loginWithGithub }}>
             {!loading && children}
         </AuthContext.Provider>
@@ -116,17 +102,3 @@ export function AuthProvider({ children }) {
 export function useAuth() {
     return useContext(AuthContext);
 }
-
-export const syncXP = async (userId, commitCount) => {
-    const xpEarned = commitCount * 10;
-    const userRef = doc(db, "users", userId);
-
-    if (xpEarned > 0) {
-        await updateDoc(userRef, {
-            xp: increment(xpEarned),
-            // We can add logic here to check if they should level up
-        });
-        return xpEarned;
-    }
-    return 0;
-};
