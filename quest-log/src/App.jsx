@@ -5,10 +5,13 @@ import Dashboard from "./pages/Dashboard/Dashboard"; // We'll create a placehold
 
 // A "Protected Route" component to block unauthorized users
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // While Firebase is checking if you're logged in, show nothing or a loader
+  if (loading) return null;
+
   return user ? children : <Navigate to="/auth" />;
 };
-
 function App() {
   return (
     <AuthProvider>

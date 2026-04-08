@@ -12,11 +12,14 @@ export const fetchGithubCommits = async (githubToken, username) => {
         if (!response.ok) throw new Error("Failed to fetch GitHub events");
 
         const events = await response.json();
-        const today = new Date().toISOString().split('T')[0];
 
-        const dailyCommits = events.filter(event =>
-            event.type === "PushEvent" && event.created_at.startsWith(today)
-        );
+        // Fix: Check for pushes within the last 24 hours to avoid timezone issues
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const dailyCommits = events.filter(event => {
+            const eventDate = new Date(event.created_at);
+            return event.type === "PushEvent" && eventDate > twentyFourHoursAgo;
+        });
 
         let commitCount = 0;
         dailyCommits.forEach(event => {

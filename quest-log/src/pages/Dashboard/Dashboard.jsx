@@ -222,19 +222,15 @@ export default function Dashboard() {
         const toastId = toast.loading("Oracle is checking your commits...");
 
         try {
-            // 1. Fetch Commits
             const commits = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
 
             if (commits === 0) {
-                toast.dismiss(toastId);
-                return toast("No new commits found for today. Get to work, Adventurer!", { icon: '⚒️' });
+                toast.dismiss(toastId); // Remove the loading toast!
+                return toast("No new commits found in the last 24h. Keep coding!", { icon: '⚒️' });
             }
 
-            // 2. Calculate XP (10 XP per commit)
             const earnedXp = commits * 10;
             const newTotalXp = (profile.xp || 0) + earnedXp;
-
-            // 3. Check for Level Up using the quadratic formula
             const { currentLevel } = calculateLevelInfo(newTotalXp);
 
             const userRef = doc(db, "users", user.uid);
@@ -245,17 +241,19 @@ export default function Dashboard() {
 
             if (currentLevel > profile.level) {
                 setShowLevelUp(true);
-                victorySound.play();
+                if (window.victorySound) window.victorySound.play();
             }
 
+            // Using { id: toastId } transforms the loading toast into a success toast
             toast.success(`Synced! +${earnedXp} XP from ${commits} commits!`, { id: toastId });
+
         } catch (err) {
+            console.error(err);
             toast.error("The Oracle is unreachable. Check your VPN!", { id: toastId });
         } finally {
             setIsSyncing(false);
         }
     };
-
     return (
         <div className={`dashboard-container ${isWorldShaking ? 'world-event-shake' : ''}`}>
             <Toaster position="top-center" reverseOrder={false} />
