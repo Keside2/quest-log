@@ -11,24 +11,24 @@ export const fetchGithubCommits = async (githubToken, username) => {
         });
 
         if (!response.ok) throw new Error("Failed to fetch GitHub events");
-
         const events = await response.json();
 
-        // WIDEN THE WINDOW: Check for pushes in the last 48 hours
-        // This stops the "expiration" issue if you push late at night
-        const fortyEightHoursAgo = new Date();
-        fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+        // 1. Get the start of "Today" in your local time
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
 
-        console.log("Checking for pushes since:", fortyEightHoursAgo.toLocaleString());
+        console.log("Checking for pushes since start of today:", startOfToday.toLocaleString());
 
         const dailyCommits = events.filter(event => {
             const eventDate = new Date(event.created_at);
-            return event.type === "PushEvent" && eventDate > fortyEightHoursAgo;
+            return event.type === "PushEvent" && eventDate >= startOfToday;
         });
 
         let commitCount = 0;
         dailyCommits.forEach(event => {
             if (event.payload && event.payload.commits) {
+                // LOG THE REPO NAME: This helps us see which projects are being counted
+                console.log(`Counting ${event.payload.commits.length} commits from repo: ${event.repo.name}`);
                 commitCount += event.payload.commits.length;
             }
         });
