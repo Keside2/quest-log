@@ -9,35 +9,42 @@ export const fetchGithubCommits = async (githubToken, username) => {
                 "Accept": "application/vnd.github.v3+json",
             },
         });
+
         if (!response.ok) throw new Error("Failed to fetch GitHub events");
 
         const events = await response.json();
 
-        // DEBUG: See what's coming back from GitHub
-        console.log("All GitHub Events:", events);
+        // 1. Get Today's Date in your local time (YYYY-MM-DD)
+        const localToday = new Date();
+        const year = localToday.getFullYear();
+        const month = String(localToday.getMonth() + 1).padStart(2, '0');
+        const day = String(localToday.getDate()).padStart(2, '0');
+        const todayString = `${year}-${month}-${day}`;
 
-        // Check for pushes within the last 24 hours
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        console.log("Looking for events on date:", todayString);
 
+        // 2. Filter events: Just check if the 'created_at' includes today's date string
         const dailyCommits = events.filter(event => {
-            const eventDate = new Date(event.created_at);
-            // ONLY process PushEvents that happened in the last 24h
-            return event.type === "PushEvent" && eventDate > twentyFourHoursAgo;
+            const isPush = event.type === "PushEvent";
+            const isToday = event.created_at.includes(todayString);
+            return isPush && isToday;
         });
 
         let commitCount = 0;
         dailyCommits.forEach(event => {
-            // SAFE CHECK: Use ?. to prevent the "undefined" error
-            // Also check if payload.commits actually exists
             if (event.payload && event.payload.commits) {
                 commitCount += event.payload.commits.length;
             }
         });
 
-        console.log(`Found ${commitCount} commits for ${username}`);
+        // 3. EMERGENCY FALLBACK: If 0 found for today, check the very last event 
+        // just to see if the API is working at all.
+        if (commitCount === 0 && events.length > 0) {
+            console.log("No commits for today string. Latest event type:", events[0].type);
+        }
+
         return commitCount;
     } catch (error) {
-        // This will now catch actual network errors instead of code crashes
         console.error("Github Service Error:", error);
         return 0;
     }
