@@ -13,6 +13,9 @@ export const fetchGithubCommits = async (githubToken, username) => {
 
         const events = await response.json();
 
+        // DEBUG: See what's coming back from GitHub
+        console.log("All GitHub Events:", events);
+
         // Check for pushes within the last 24 hours
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
