@@ -3,7 +3,8 @@ const GITHUB_API_URL = "https://api.github.com";
 
 export const fetchGithubCommits = async (githubToken, username) => {
     try {
-        const response = await fetch(`${GITHUB_API_URL}/users/${username}/events`, {
+        // We add a timestamp to the URL to try and "bust" any browser caching
+        const response = await fetch(`${GITHUB_API_URL}/users/${username}/events?nocache=${Date.now()}`, {
             headers: {
                 Authorization: `token ${githubToken}`,
                 "Accept": "application/vnd.github.v3+json",
@@ -11,29 +12,29 @@ export const fetchGithubCommits = async (githubToken, username) => {
         });
 
         if (!response.ok) throw new Error("Failed to fetch GitHub events");
+
         const events = await response.json();
 
-        // 1. Get the start of "Today" in your local time
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
+        // 1. Create a 48-hour safety window
+        const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-        console.log("Checking for pushes since start of today:", startOfToday.toLocaleString());
+        console.log("Oracle is searching all events since:", fortyEightHoursAgo.toLocaleString());
 
-        const dailyCommits = events.filter(event => {
+        // 2. Filter: Find any PushEvent in that 48h window
+        const recentPushes = events.filter(event => {
             const eventDate = new Date(event.created_at);
-            return event.type === "PushEvent" && eventDate >= startOfToday;
+            return event.type === "PushEvent" && eventDate > fortyEightHoursAgo;
         });
 
         let commitCount = 0;
-        dailyCommits.forEach(event => {
+        recentPushes.forEach(event => {
             if (event.payload && event.payload.commits) {
-                // LOG THE REPO NAME: This helps us see which projects are being counted
-                console.log(`Counting ${event.payload.commits.length} commits from repo: ${event.repo.name}`);
+                console.log(`✅ Found ${event.payload.commits.length} commits at ${event.created_at}`);
                 commitCount += event.payload.commits.length;
             }
         });
 
-        console.log(`Total Commits found: ${commitCount}`);
+        console.log(`Total Oracle Count: ${commitCount}`);
         return commitCount;
     } catch (error) {
         console.error("Github Service Error:", error);
