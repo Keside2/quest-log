@@ -14,35 +14,28 @@ export const fetchGithubCommits = async (githubToken, username) => {
 
         const events = await response.json();
 
-        // 1. Get Today's Date in your local time (YYYY-MM-DD)
-        const localToday = new Date();
-        const year = localToday.getFullYear();
-        const month = String(localToday.getMonth() + 1).padStart(2, '0');
-        const day = String(localToday.getDate()).padStart(2, '0');
-        const todayString = `${year}-${month}-${day}`;
+        // 1. Create a "24-hour ago" timestamp
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-        console.log("Looking for events on date:", todayString);
+        console.log("Checking for pushes since:", twentyFourHoursAgo.toLocaleString());
 
-        // 2. Filter events: Just check if the 'created_at' includes today's date string
+        // 2. Filter using Date objects instead of Strings
         const dailyCommits = events.filter(event => {
-            const isPush = event.type === "PushEvent";
-            const isToday = event.created_at.includes(todayString);
-            return isPush && isToday;
+            const eventDate = new Date(event.created_at);
+            return event.type === "PushEvent" && eventDate > twentyFourHoursAgo;
         });
 
         let commitCount = 0;
         dailyCommits.forEach(event => {
             if (event.payload && event.payload.commits) {
+                // Double check: console.log each found push
+                console.log(`Found PushEvent at ${event.created_at} with ${event.payload.commits.length} commits`);
                 commitCount += event.payload.commits.length;
             }
         });
 
-        // 3. EMERGENCY FALLBACK: If 0 found for today, check the very last event 
-        // just to see if the API is working at all.
-        if (commitCount === 0 && events.length > 0) {
-            console.log("No commits for today string. Latest event type:", events[0].type);
-        }
-
+        console.log(`Total Commits in last 24h: ${commitCount}`);
         return commitCount;
     } catch (error) {
         console.error("Github Service Error:", error);
