@@ -375,14 +375,14 @@
 }
 
 /* Spinning Animation for when isSyncing is true */
-.spinning {
+/* .spinning {
     animation: oracle-spin 1.5s linear infinite;
 }
 
 @keyframes oracle-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-}
+} */
 
 /* Optional: Make the button pulse slightly to remind the user to sync */
 .pulse-sync {
