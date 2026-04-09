@@ -3,7 +3,7 @@
 // Replace 'your-backend-url' with the actual URL from your Render Web Service
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? "http://localhost:5000"
-    : "https://your-backend-url.onrender.com";
+    : "https://quest-log-app.onrender.com";
 
 /**
  * Fetches commit count via our Proxy Server to bypass ISP blocks
