@@ -18,16 +18,18 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     // --- WORKING GITHUB LOGIN (POPUP) ---
+    // Inside AuthContext.jsx
     async function loginWithGithub() {
         const provider = new GithubAuthProvider();
+        // Explicitly ask for email and repo access
         provider.addScope('repo');
+        provider.addScope('user:email');
 
-        setLoading(true); // Start loader
+        setLoading(true);
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            // Get the token and the username (screenName)
             const credential = GithubAuthProvider.credentialFromResult(result);
             const token = credential.accessToken;
             const githubUsername = result._tokenResponse.screenName;
@@ -35,28 +37,30 @@ export function AuthProvider({ children }) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
 
+            const userData = {
+                githubToken: token,
+                githubUsername: githubUsername,
+                // Fallback chain to ensure email is NEVER null again
+                email: user.email || result._tokenResponse.email || "Adventurer@questlog.com",
+                lastLogin: new Date()
+            };
+
             if (!userSnap.exists()) {
                 await setDoc(userRef, {
+                    ...userData,
                     username: user.displayName || "Adventurer",
-                    githubUsername: githubUsername, // Added this!
-                    email: user.email,
                     level: 1,
                     xp: 0,
-                    githubToken: token,
                     createdAt: new Date()
                 });
             } else {
-                // Update both so the Sync button works immediately
-                await updateDoc(userRef, {
-                    githubToken: token,
-                    githubUsername: githubUsername
-                });
+                await updateDoc(userRef, userData);
             }
 
-            setLoading(false); // Stop loader
+            setLoading(false);
             return result;
         } catch (error) {
-            setLoading(false); // Stop loader on error
+            setLoading(false);
             console.error("GitHub Login Error:", error);
             throw error;
         }

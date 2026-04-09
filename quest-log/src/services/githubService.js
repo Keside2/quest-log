@@ -3,50 +3,40 @@ const GITHUB_API_URL = "https://api.github.com";
 
 export const fetchGithubCommits = async (githubToken, username) => {
     try {
-        // We add a timestamp to the URL to try and "bust" any browser caching
-        const response = await fetch(`${GITHUB_API_URL}/users/${username}/events?nocache=${Date.now()}`, {
-            headers: {
-                Authorization: `token ${githubToken}`,
-                "Accept": "application/vnd.github.v3+json",
-            },
-        });
+        // Look for commits in the last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        if (!response.ok) throw new Error("Failed to fetch GitHub events");
-
-        const events = await response.json();
-
-        // 1. Create a 48-hour safety window
-        const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-
-        console.log("Oracle is searching all events since:", fortyEightHoursAgo.toLocaleString());
-
-        // 2. Filter: Find any PushEvent in that 48h window
-        const recentPushes = events.filter(event => {
-            const eventDate = new Date(event.created_at);
-            return event.type === "PushEvent" && eventDate > fortyEightHoursAgo;
-        });
-
-        let commitCount = 0;
-        recentPushes.forEach(event => {
-            if (event.payload && event.payload.commits) {
-                console.log(`✅ Found ${event.payload.commits.length} commits at ${event.created_at}`);
-                commitCount += event.payload.commits.length;
+        // The Search API is the "Heavy Hitter" - it finds everything
+        const response = await fetch(
+            `${GITHUB_API_URL}/search/commits?q=author:${username}+committer-date:>${twentyFourHoursAgo}`,
+            {
+                headers: {
+                    Authorization: `token ${githubToken}`,
+                    "Accept": "application/vnd.github.cloak-preview" // Required for Search API
+                },
             }
-        });
+        );
 
-        console.log(`Total Oracle Count: ${commitCount}`);
-        return commitCount;
+        if (!response.ok) {
+            const errData = await response.json();
+            console.error("GitHub API Error:", errData);
+            throw new Error("Failed to search commits");
+        }
+
+        const data = await response.json();
+
+        // 'total_count' tells us exactly how many commits you made
+        console.log(`Oracle Search found ${data.total_count} commits.`);
+        return data.total_count || 0;
+
     } catch (error) {
         console.error("Github Service Error:", error);
         return 0;
     }
 };
-// --- NEW: THE QUADRATIC LEVELING FORMULA ---
-export const calculateLevelInfo = (totalXP) => {
-    // Level = sqrt(XP / 100) + 1
-    const currentLevel = Math.floor(Math.sqrt(totalXP / 100)) + 1;
-    // XP needed for NEXT level: (Level)^2 * 100
-    const nextLevelXP = Math.pow(currentLevel, 2) * 100;
 
+export const calculateLevelInfo = (totalXP) => {
+    const currentLevel = Math.floor(Math.sqrt(totalXP / 100)) + 1;
+    const nextLevelXP = Math.pow(currentLevel, 2) * 100;
     return { currentLevel, nextLevelXP };
 };
