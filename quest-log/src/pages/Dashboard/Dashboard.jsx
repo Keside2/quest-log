@@ -222,34 +222,56 @@ export default function Dashboard() {
         const toastId = toast.loading("Oracle is checking your commits...");
 
         try {
-            const commits = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
+            const totalCommitsFound = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
 
-            if (commits === 0) {
-                toast.dismiss(toastId); // Remove the loading toast!
-                return toast("No new commits found in the last 24h. Keep coding!", { icon: '⚒️' });
+            // --- THE ANTI-CHEAT LOCK ---
+            // Subtract commits we already gave XP for
+            const alreadyRewarded = profile.lastSyncedCommitCount || 0;
+            const newCommits = totalCommitsFound - alreadyRewarded;
+
+            if (newCommits <= 0) {
+                toast.dismiss(toastId);
+                return toast("No new commits since last sync. Keep coding!", { icon: '⚒️' });
             }
 
-            const earnedXp = commits * 10;
+            // --- XP CALCULATION ---
+            const earnedXp = newCommits * 10;
             const newTotalXp = (profile.xp || 0) + earnedXp;
+
+            // Use your service formula for level checking
             const { currentLevel } = calculateLevelInfo(newTotalXp);
 
+            // --- UPDATE HISTORY ---
+            // This makes the sync appear in your "Quest History" list
+            await addDoc(collection(db, "quests"), {
+                userId: user.uid,
+                title: `GitHub Sync: ${newCommits} Commits`,
+                xp: earnedXp,
+                status: "completed",
+                type: "sync", // marked as sync so you can style it differently if you want
+                proof: `Oracle verified ${newCommits} new scrolls in the repository.`,
+                createdAt: serverTimestamp(),
+                completedAt: serverTimestamp()
+            });
+
+            // --- UPDATE USER PROFILE ---
             const userRef = doc(db, "users", user.uid);
             await updateDoc(userRef, {
                 xp: newTotalXp,
-                level: currentLevel
+                level: currentLevel,
+                lastSyncedCommitCount: totalCommitsFound // The Lock: Save the new total
             });
 
             if (currentLevel > profile.level) {
                 setShowLevelUp(true);
-                if (window.victorySound) window.victorySound.play();
+                victorySound.play();
             }
 
-            // Using { id: toastId } transforms the loading toast into a success toast
-            toast.success(`Synced! +${earnedXp} XP from ${commits} commits!`, { id: toastId });
+            toast.success(`Synced! +${earnedXp} XP!`, { id: toastId });
 
         } catch (err) {
             console.error(err);
-            toast.error("The Oracle is unreachable. Check your VPN!", { id: toastId });
+            toast.error("The Oracle is unreachable. Check VPN!", { id: toastId });
         } finally {
             setIsSyncing(false);
         }
