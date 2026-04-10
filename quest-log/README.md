@@ -6,13 +6,21 @@ QuestLog is a specialized productivity SaaS that transforms daily coding tasks a
 
 Most productivity tools feel like chores. **QuestLog** uses gamification mechanics—XP, Leveling, and Evolution Tiers—to drive user retention and make progress feel rewarding.
 
-## 🛠️ Tech Stack (Current)
+## 🛠️ Tech Stack
 
-- **Frontend:** React (Plain CSS for high-performance styling)
+### Frontend
+
+- **Framework:** React (Plain CSS for high-performance, custom styling)
 - **State Management:** React Context API
-- **Backend/DB:** Firebase (Firestore & Auth)
-- **Navigation:** React Router DOM
-- **Feedback:** React Hot Toast
+- **Real-time Data:** Firebase Firestore (Listeners for instant UI updates)
+- **Feedback:** React Hot Toast + custom CSS animations
+
+### Backend (The Oracle Proxy)
+
+- **Environment:** Node.js & Express
+- **Deployment:** Render (Bypassing regional ISP restrictions for global access)
+- **Integrations:** GitHub Search API (Automated XP via Commits)
+- **Security:** Proxy-layer authentication to shield API tokens.
 
 ---
 
@@ -20,35 +28,52 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ### Phase 1: The Core Loop (Completed ✅)
 
-- [x] **Project Setup:** React + Firebase Initialization.
 - [x] **The Gatehouse:** Mobile-first Authentication (Login/Sign-up).
 - [x] **Hero Identity:** Firestore integration for Usernames and Stats.
 - [x] **The HUD:** Dynamic Dashboard with animated XP bar.
-- [x] **The Archivist:** Quest History with Pagination and Delete logic.
 - [x] **Victory Sequence:** Level-Up Overlay animation and logic.
-- [x] **Quest CRUD:** Create, Read, Update, and Delete logic for tasks.
-- [x] **Time Mastery:** Estimated duration tracking for better raid planning.
 - [x] **Tactical HUD:** Real-time Difficulty Filtering (Easy/Medium/Hard).
 
-### Phase 2: The Hero's Journey (In Progress 🏗️)
+### Phase 2: The Hero's Journey (Completed ✅)
 
-- [x] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements. ✅
-- [x] **Screen Shake:** Impact effects for Boss attacks. ✅
-- [x] **Evolutionary Avatar:** Visual "Hero" character that transforms at level milestones. ✅
-- [x] **Loot Drops:** Logic to "award" items to the user's Firestore inventory.✅
-- [x] **Scaling Difficulty:** Level-based Boss evolution (Higher Level = More HP/Timers).
+- [x] **Boss Battles:** High-stakes project milestones with "multi-hit" HP requirements.
+- [x] **Screen Shake:** Impact effects for Boss attacks.
+- [x] **Evolutionary Avatar:** Visual "Hero" character that transforms at level milestones.
+- [x] **The Honor System:** "Proof of Work" verification required to claim XP.
+- [x] **Habit Streaks:** Daily login bonuses and task consistency tracking.
 
-### Phase 3: Polish & Sound
+### Phase 3: The Oracle Integration (New! 🛡️)
 
-- [x] Level Logic: Mathematical formula for scaling Level-Up thresholds ($100 \times 1.2^{L-1}$). ✅
-- [x] **Habit Streaks:** Logic for daily login bonuses and task consistency. ✅
-- [ ] **Sound Effects:** 8-bit audio cues for quest completion and UI interaction.
+- [x] **GitHub Sync:** Automated XP gain from GitHub commits.
+- [x] **Oracle Proxy:** Node.js backend to bypass ISP blocks and ensure 100% uptime.
+- [x] **Anti-Cheat Lock:** `lastSyncedCommitCount` logic to prevent XP double-dipping.
+- [x] **Auto-Chronicle:** GitHub syncs automatically generate entries in Quest History.
+
+### Phase 4: Future Evolution (The Legendary Tier 🏗️)
+
+- [ ] **Social Tavern:** Global Leaderboard (Hall of Heroes) to compare XP with friends.
+- [ ] **The Forge:** Use XP/Gold to unlock custom CSS themes and avatar frames.
+- [ ] **Soundscape:** 8-bit audio cues for quest completion and UI interaction.
+
+---
+
+## 👹 Advanced Mechanics
+
+### The Oracle Proxy Architecture
+
+To ensure users in all regions (including Nigeria) can sync their GitHub data without a VPN, QuestLog uses a **Node.js Proxy Server**.
+
+- **The Flow:** Client ➔ Express Proxy (Render) ➔ GitHub API.
+- **The Result:** Faster response times and zero connectivity issues.
+
+### Mathematical Scaling
+
+- **Level Progression:** XP requirements scale using $100 \times 1.2^{L-1}$.
+- **Boss Scaling:** Boss HP scales dynamically: $HP = Base + Level \times 1.5$.
 
 ---
 
 ## 👤 Hero Evolution Tiers
-
-The user's avatar physically evolves as they grow stronger.
 
 | Tier           | Levels  | Icon | Title          |
 | :------------- | :------ | :--- | :------------- |
@@ -60,58 +85,11 @@ The user's avatar physically evolves as they grow stronger.
 
 ---
 
-## 💎 The Arsenal (Boss Loot Table)
-
-Players earn unique gear by defeating Bosses at specific level milestones.
-
-| Level  | Item             | Icon | Description                                      |
-| :----- | :--------------- | :--- | :----------------------------------------------- |
-| **5**  | Iron Boots       | 🥾   | Heavy plating for steady advancement.            |
-| **10** | Wanderer's Cloak | 🧥   | A rugged cloak for seasoned travelers.           |
-| **15** | Silver Blade     | ⚔️   | A sharp edge for cutting through technical debt. |
-| **20** | Ethereal Aura    | ✨   | The glow of a true Sovereign.                    |
-
----
-
-## 🏗️ Data Schema: The Quest Model
-
-| Field        | Type      | Description                                 |
-| :----------- | :-------- | :------------------------------------------ |
-| `title`      | String    | What you need to do (e.g., "Fix Navbar").   |
-| `difficulty` | String    | Easy, Medium, or Hard.                      |
-| `xp`         | Number    | The calculated reward (10, 25, or 50 XP).   |
-| `duration`   | String    | Estimated time (15m, 30m, 60m, 120m).       |
-| `status`     | String    | `active` or `completed`.                    |
-| `type`       | String    | `normal` or `boss`.                         |
-| `hp`         | Number    | Required "hits" to finish (Boss only).      |
-| `userId`     | String    | Links the quest to the specific Hero's UID. |
-| `createdAt`  | Timestamp | For sorting quests by date.                 |
-
----
-
-## 👹 Boss Battle Mechanics
-
-To handle large projects, QuestLog implements **Scaling Bosses**:
-
-- **Multi-Hit HP:** Unlike normal quests, Bosses require multiple "attacks" (progress updates) to defeat.
-- **Dynamic Scaling:** Boss HP scales with the player's level ($HP = Base + Level \times 1.5$).
-- **Tiered Rewards:** Level 10+ Bosses unlock Legendary Loot and Auras.
-
----
-
-## 🛡️ Future Evolution (The Legendary Tier)
-
-- [x] **The Honor System:** Optional "Proof of Work" field required to claim XP.
-- [ ] **Automated Quests:** GitHub API integration for XP via Commits/PRs.
-- [ ] **Social Tavern:** View friend's avatars and compete on a leaderboard.
-
----
-
 ## 📜 Dev Log
 
-### Day 88
+### Day 89
 
-> final pre-launch polish and documentation review.
+> **The Great Bridge:** Successfully migrated GitHub sync logic to a dedicated Node.js proxy server on Render. Updated documentation and finalized the "Anti-Cheat" XP lock. The app is now fully functional globally without a VPN.
 
 ---
 
@@ -121,6 +99,4 @@ To handle large projects, QuestLog implements **Scaling Bosses**:
    ```bash
    git clone [https://github.com/Keside2/quest-log.git](https://github.com/Keside2/quest-log.git)
    cd quest-log
-   npm install
-   npm start
    ```
