@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // These will be pulled from your .env file for security
@@ -17,6 +18,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Export services for use in the app
+
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// --- ADD THE LEADERBOARD LOGIC HERE ---
+
+
+export const fetchTopHeroes = async () => {
+    try {
+        const heroesRef = collection(db, "users");
+        // Sort by Level first, then XP for tie-breaking
+        const q = query(heroesRef, orderBy("level", "desc"), orderBy("xp", "desc"), limit(10));
+
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error("Error fetching Hall of Heroes:", error);
+        return [];
+    }
+};
+
 export default app;

@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext/AuthContext";
 import Auth from "./pages/Auth/Auth";
-import Dashboard from "./pages/Dashboard/Dashboard"; // We'll create a placeholder for this
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Leaderboard from "./components/Leaderboard/Leaderboard";
 
 // A "Protected Route" component to block unauthorized users
 const ProtectedRoute = ({ children }) => {
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           {/* Public Route */}
           <Route path="/auth" element={<Auth />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />).
 
           {/* Protected Routes */}
           <Route

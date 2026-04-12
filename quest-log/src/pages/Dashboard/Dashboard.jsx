@@ -24,6 +24,7 @@ import { BOSS_LOOT_TABLE } from "../../constants/loot"; // Imported loot table
 import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationModal";
 import HonorModal from "../../components/HonorModal/HonorModal";
 import { fetchGithubCommits, calculateLevelInfo } from "../../services/githubService";
+import Leaderboard from "../../components/Leaderboard/Leaderboard";
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -282,13 +283,15 @@ export default function Dashboard() {
             <BossManager user={user} profile={profile} activeQuests={quests} setIsWorldShaking={setIsWorldShaking} />
 
             <header className="stats-header">
-                <button
-                    className={`sync-btn ${isSyncing ? 'spinning' : ''}`}
-                    onClick={handleSyncGitHub}
-                    disabled={isSyncing}
-                >
-                    🔄 Sync GitHub
-                </button>
+                <div className="header-actions"> {/* Added a wrapper for better layout */}
+                    <button
+                        className={`sync-btn ${isSyncing ? 'spinning' : ''}`}
+                        onClick={handleSyncGitHub}
+                        disabled={isSyncing}
+                    >
+                        🔄 Sync GitHub
+                    </button>
+                </div>
                 <HeroAvatar inventory={profile?.inventory} level={profile?.level} />
                 <div className="hero-info">
                     <p style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user?.email}</p>
@@ -308,104 +311,113 @@ export default function Dashboard() {
                 <button onClick={logout} className="logout-btn">Leave Tavern</button>
             </header>
 
-            <main className="quest-section">
-                <div className="section-header">
-                    <h3>Quest Board</h3>
-                    <button className="add-quest-pill pulse-prompt" onClick={() => setIsModalOpen(true)}>+ New Quest</button>
-                </div>
-                <QuestFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                {/* UPDATED QUEST GRID SECTION */}
-                <div className="quest-grid">
-                    {filteredQuests.length === 0 ? (
-                        <div className="empty-dashboard-state">
-                            <div className="empty-shield-icon">🛡️</div>
-                            <h4>Your Journey Begins Here!</h4>
-                            <p>Every Legend starts with a single quest. Add your first task to begin earning XP and evolving your Hero.</p>
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="first-quest-btn"
-                            >
-                                + Summon First Quest
-                            </button>
-                        </div>
-                    ) : (
-                        filteredQuests.map((quest) => (
-                            <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}>
-                                {/* ... keep your existing quest-card content */}
-                                <div className="quest-info">
-                                    <div className="card-meta">
-                                        <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
-                                        <span className="duration-label">⏳ {quest.duration || 30}m</span>
-                                    </div>
-                                    <h4>{quest.title}</h4>
-                                    {quest.type === 'boss' && (
-                                        <div className="boss-hp-bar">
-                                            <div className="hp-fill" style={{ width: `${(quest.currentHp / quest.hp) * 100}%` }}></div>
-                                            <small>{quest.currentHp}/{quest.hp} HP</small>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="quest-reward-zone">
-                                    <span className="xp-badge">+{quest.xp} XP</span>
-                                    <button
-                                        className="complete-btn"
-                                        onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp, quest.title)}
-                                    >
-                                        {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <section className="history-section">
+            <main className="dashboard-layout">
+                <section className="quest-section lock">
                     <div className="section-header">
-                        <h3>Quest History ({completedQuests.length})</h3>
-                        {completedQuests.length > 0 && (
-                            <button onClick={() => setIsConfirmOpen(true)} className="clear-all-btn">
-                                Clear All
-                            </button>
-                        )}
+                        <h3>Quest Board</h3>
+                        <button className="add-quest-pill pulse-prompt" onClick={() => setIsModalOpen(true)}>+ New Quest</button>
                     </div>
-                    <div className="history-list">
-                        {currentItems.length === 0 ? (
-                            <p className="empty-text">No legends written yet...</p>
+                    <QuestFilter activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                    {/* UPDATED QUEST GRID SECTION */}
+                    <div className="quest-grid">
+                        {filteredQuests.length === 0 ? (
+                            <div className="empty-dashboard-state">
+                                <div className="empty-shield-icon">🛡️</div>
+                                <h4>Your Journey Begins Here!</h4>
+                                <p>Every Legend starts with a single quest. Add your first task to begin earning XP and evolving your Hero.</p>
+                                <button
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="first-quest-btn"
+                                >
+                                    + Summon First Quest
+                                </button>
+                            </div>
                         ) : (
-                            currentItems.map(q => (
-                                <div key={q.id} className="history-item">
-                                    <div className="history-info">
-                                        <span className="check-icon">✔</span>
-                                        <div>
-                                            <p><strong>{q.title}</strong></p>
-                                            {/* NEW: Show proof if it exists */}
-                                            {q.proof && (
-                                                <small style={{
-                                                    display: 'block',
-                                                    fontStyle: 'italic',
-                                                    color: '#94a3b8',
-                                                    fontSize: '0.75rem',
-                                                    marginTop: '2px'
-                                                }}>
-                                                    📜 {q.proof}
-                                                </small>
-                                            )}
+                            filteredQuests.map((quest) => (
+                                <div key={quest.id} className={`quest-card ${quest.difficulty.toLowerCase()} ${quest.type === 'boss' ? 'boss-mode' : ''} ${hittingBossId === quest.id ? 'boss-damage-shake' : ''}`}>
+                                    {/* ... keep your existing quest-card content */}
+                                    <div className="quest-info">
+                                        <div className="card-meta">
+                                            <span className="difficulty-label">{quest.type === 'boss' ? '👹 BOSS' : quest.difficulty}</span>
+                                            <span className="duration-label">⏳ {quest.duration || 30}m</span>
                                         </div>
+                                        <h4>{quest.title}</h4>
+                                        {quest.type === 'boss' && (
+                                            <div className="boss-hp-bar">
+                                                <div className="hp-fill" style={{ width: `${(quest.currentHp / quest.hp) * 100}%` }}></div>
+                                                <small>{quest.currentHp}/{quest.hp} HP</small>
+                                            </div>
+                                        )}
                                     </div>
-                                    <button className="delete-hist-btn" onClick={() => handleDeleteHistoryItem(q.id)}>🗑️</button>
+                                    <div className="quest-reward-zone">
+                                        <span className="xp-badge">+{quest.xp} XP</span>
+                                        <button
+                                            className="complete-btn"
+                                            onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp, quest.title)}
+                                        >
+                                            {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className="pagination-controls">
-                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
-                            <span>Page {currentPage} of {totalPages}</span>
-                            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
+                    <section className="history-section">
+                        <div className="section-header">
+                            <h3>Quest History ({completedQuests.length})</h3>
+                            {completedQuests.length > 0 && (
+                                <button onClick={() => setIsConfirmOpen(true)} className="clear-all-btn">
+                                    Clear All
+                                </button>
+                            )}
                         </div>
-                    )}
+                        <div className="history-list">
+                            {currentItems.length === 0 ? (
+                                <p className="empty-text">No legends written yet...</p>
+                            ) : (
+                                currentItems.map(q => (
+                                    <div key={q.id} className="history-item">
+                                        <div className="history-info">
+                                            <span className="check-icon">✔</span>
+                                            <div>
+                                                <p><strong>{q.title}</strong></p>
+                                                {/* NEW: Show proof if it exists */}
+                                                {q.proof && (
+                                                    <small style={{
+                                                        display: 'block',
+                                                        fontStyle: 'italic',
+                                                        color: '#94a3b8',
+                                                        fontSize: '0.75rem',
+                                                        marginTop: '2px'
+                                                    }}>
+                                                        📜 {q.proof}
+                                                    </small>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button className="delete-hist-btn" onClick={() => handleDeleteHistoryItem(q.id)}>🗑️</button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className="pagination-controls">
+                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
+                                <span>Page {currentPage} of {totalPages}</span>
+                                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>
+                            </div>
+                        )}
+                    </section>
+
                 </section>
+
+                {/* RIGHT COLUMN: The Hall of Heroes Sidebar */}
+                <aside className="leaderboard-sidebar">
+                    <Leaderboard />
+                </aside>
+
             </main>
 
             <QuestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddQuest={(d) => { addDoc(collection(db, "quests"), { ...d, userId: user.uid, createdAt: serverTimestamp(), status: "active" }); toast.success("Quest Summoned!"); }} userLevel={profile?.level || 1} />

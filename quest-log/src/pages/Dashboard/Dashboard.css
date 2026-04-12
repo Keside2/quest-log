@@ -17,6 +17,7 @@
   border: 1px solid rgba(56, 189, 248, 0.2);
   margin-bottom: 2rem;
   text-align: center;
+  
 }
 
 /* --- USER STATS --- */
@@ -76,13 +77,13 @@
 }
 
 /* --- QUEST GRID & CARDS --- */
-.quest-section { padding: 1rem; max-width: 1200px; margin: 0 auto; }
+.quest-section { padding: 1rem; width: 100%; margin: 0 auto; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 
 .quest-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.2rem;
 }
 
 .quest-card {
@@ -196,12 +197,17 @@
     opacity: 0.3;
     cursor: not-allowed;
 }
+.lock{
+  margin: -15px;
+  }
 
 /* --- RESPONSIVE --- */
 @media (min-width: 768px) {
   .stats-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; }
   .xp-container { width: 300px; }
   .logout-btn { width: auto; align-self: center; }
+  
+  
 }
 
 /* --- ANIMATIONS --- */
@@ -394,3 +400,46 @@
     to { box-shadow: 0 0 15px rgba(9, 105, 218, 0.8); }
 }
 
+
+/* The container that holds both the Quests and the Sidebar */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px; 
+    gap: 2rem;
+    align-items: start;
+    max-width: 1200px; /* Keep the 1200px limit here! */
+    margin: 0 auto;    /* Centers the entire grid */
+    padding: 0 1.5rem; /* Prevents text from touching screen edges on mobile */
+}
+
+/* On mobile/tablet, switch to a single column */
+@media (max-width: 1100px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr; /* Sidebar drops to the bottom */
+        padding: 0 1rem;
+    }
+}
+
+/* Specific styling for the Sidebar container */
+.leaderboard-sidebar {
+    position: sticky;
+    top: 1rem;
+    background: rgba(15, 23, 42, 0.8); /* Solid dark for depth */
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+
+/* Mobile Responsiveness: Stack them when the screen is too small */
+@media (max-width: 1100px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .leaderboard-sidebar {
+        position: static;
+        order: 2; /* Moves leaderboard below quests on mobile */
+    }
+}
