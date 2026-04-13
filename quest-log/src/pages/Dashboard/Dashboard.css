@@ -397,7 +397,7 @@
 
 @keyframes sync-glow {
     from { box-shadow: 0 0 5px rgba(9, 105, 218, 0.4); }
-    to { box-shadow: 0 0 15px rgba(9, 105, 218, 0.8); }
+    to { box-shadow: 0 0 15px rgba(8, 111, 227, 0.8); }
 }
 
 
