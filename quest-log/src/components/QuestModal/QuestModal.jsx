@@ -21,8 +21,8 @@ export default function QuestModal({ isOpen, onClose, onAddQuest, userLevel }) {
         }
 
         let xpReward = 10;
-        if (difficulty === "Medium") xpReward = 25;
-        if (difficulty === "Hard") xpReward = 50;
+        if (difficulty === "medium") xpReward = 25;
+        if (difficulty === "hard") xpReward = 50;
 
         // If it's a boss, maybe double the XP?
         const finalXp = type === "boss" ? xpReward * 3 : xpReward;
@@ -100,9 +100,9 @@ export default function QuestModal({ isOpen, onClose, onAddQuest, userLevel }) {
                             value={difficulty}
                             onChange={(e) => setDifficulty(e.target.value)}
                         >
-                            <option value="Easy">Easy (10 XP)</option>
-                            <option value="Medium">Medium (25 XP)</option>
-                            <option value="Hard">Hard (50 XP)</option>
+                            <option value="easy">Easy (10 XP)</option>
+                            <option value="medium">Medium (25 XP)</option>
+                            <option value="hard">Hard (50 XP)</option>
                         </select>
                     </div>
 

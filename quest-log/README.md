@@ -51,7 +51,7 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 
 ### Phase 4: Future Evolution (The Legendary Tier 🏗️)
 
-- [ ] **Social Tavern:** Global Leaderboard (Hall of Heroes) to compare XP with friends.
+- [x] **Social Tavern:** Global Leaderboard (Hall of Heroes) to compare XP with friends.
 - [ ] **The Forge:** Use XP/Gold to unlock custom CSS themes and avatar frames.
 - [ ] **Soundscape:** 8-bit audio cues for quest completion and UI interaction.
 

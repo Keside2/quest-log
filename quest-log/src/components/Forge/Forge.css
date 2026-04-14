@@ -1,0 +1,72 @@
+.forge-mini-container {
+    color: #fff;
+}
+
+.forge-mini-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.forge-mini-header h3 { margin: 0; font-size: 1.1rem; }
+.mini-gold { font-weight: bold; color: #fbbf24; font-size: 0.9rem; }
+
+.theme-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.theme-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: 0.2s;
+}
+
+.theme-row.equipped {
+    border-color: var(--primary-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.theme-main-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.theme-icon { font-size: 1.4rem; }
+
+.theme-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.theme-name { font-weight: 600; font-size: 0.9rem; }
+.theme-price { font-size: 0.75rem; color: #94a3b8; }
+
+.mini-forge-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.buy-btn { background: #334155; color: white; }
+.buy-btn:hover { background: #475569; }
+
+.equip-btn { background: var(--primary-color); color: #0f172a; }
+
+.mini-forge-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+

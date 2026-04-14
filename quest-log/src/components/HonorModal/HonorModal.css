@@ -1,5 +1,5 @@
 .honor-modal-content {
-    border: 2px solid #3b82f6; /* Blue "Honor" border */
+    border: 2px solid var(--primary-color); /* Blue "Honor" border */
     max-width: 450px !important;
 }
 
@@ -20,9 +20,10 @@
     font-family: inherit;
     resize: none;
     outline: none;
+    margin-left: -14px;
 }
 
 .honor-modal-content textarea:focus {
-    border-color: #3b82f6;
+    border-color: var(--primary-color);
     box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
 }

@@ -1,5 +1,5 @@
 import { useAuth } from "../../context/AuthContext/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { db } from "../../services/firebase";
 import {
     doc,
@@ -25,6 +25,7 @@ import ConfirmationModal from "../../components/ConfirmationModal/ConfirmationMo
 import HonorModal from "../../components/HonorModal/HonorModal";
 import { fetchGithubCommits, calculateLevelInfo } from "../../services/githubService";
 import Leaderboard from "../../components/Leaderboard/Leaderboard";
+import Forge from "../../components/Forge/Forge";
 import "./Dashboard.css";
 import "./BossStyles.css";
 
@@ -45,6 +46,9 @@ export default function Dashboard() {
     const [isHonorOpen, setIsHonorOpen] = useState(false);
     const [activeQuestForHonor, setActiveQuestForHonor] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isForgeOpen, setIsForgeOpen] = useState(false);
+    const forgeRef = useRef(null);
+
 
     // Pagination & XP Limits
     const [currentPage, setCurrentPage] = useState(1);
@@ -55,7 +59,7 @@ export default function Dashboard() {
     useEffect(() => {
         if (!user) return;
         return onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-            if (docSnap.exists()) setProfile({ ...docSnap.data() });
+            if (docSnap.exists()) setProfile({ ...docSnap.data(), uid: docSnap.id });
         });
     }, [user]);
 
@@ -98,7 +102,49 @@ export default function Dashboard() {
         checkStreak();
     }, [profile?.username]);
 
-    const handleCompleteQuest = async (questId, questXp, questType, currentHp, questTitle) => {
+    useEffect(() => {
+        if (profile?.activeTheme) {
+            const root = document.documentElement;
+
+            const themes = {
+                emerald: { primary: '#10b981', glow: 'rgba(16, 185, 129, 0.3)', bg: '#022c22' },
+                royal: { primary: '#fbbf24', glow: 'rgba(251, 191, 36, 0.3)', bg: '#2e1065' },
+                crimson: { primary: '#ef4444', glow: 'rgba(239, 68, 68, 0.3)', bg: '#450a0a' },
+                frost: { primary: '#38bdf8', glow: 'rgba(56, 189, 248, 0.3)', bg: '#0c4a6e' },
+                void: { primary: '#c084fc', glow: 'rgba(192, 132, 252, 0.3)', bg: '#1e1b4b' },
+                midnight: { primary: '#94a3b8', glow: 'rgba(148, 163, 184, 0.3)', bg: '#020617' },
+                knight: { primary: '#38bdf8', glow: 'rgba(56, 189, 248, 0.3)', bg: '#0f172a' }
+            };
+
+            const selected = themes[profile.activeTheme];
+            if (selected) {
+                root.style.setProperty('--primary-color', selected.primary);
+                root.style.setProperty('--primary-glow', selected.glow);
+                root.style.setProperty('--bg-dark', selected.bg); // This targets the background!
+            }
+        }
+    }, [profile?.activeTheme]); // Re-runs whenever the activeTheme changes
+
+    useEffect(() => {
+        // Function to check if the click was outside the forge
+        const handleClickOutside = (event) => {
+            if (forgeRef.current && !forgeRef.current.contains(event.target)) {
+                setIsForgeOpen(false);
+            }
+        };
+
+        // Attach the listener
+        if (isForgeOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        // Clean up the listener
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isForgeOpen]);
+
+    const handleCompleteQuest = async (questId, questXp, questType, currentHp, questTitle, quest) => {
         if (!user || !profile) return;
 
         // 1. BOSS HP LOGIC (Damage but not dead)
@@ -117,29 +163,43 @@ export default function Dashboard() {
             xp: questXp,
             type: questType,
             title: questTitle,
-            currentHp: currentHp
+            currentHp: currentHp,
+            difficulty: quest.difficulty
         });
         setIsHonorOpen(true);
     };
 
 
     const processHonorSuccess = async (proofOfWork) => {
-        // We get the info we "saved" in Part A
+
+        // 1. Log to verify the data structure
+        console.log("FULL QUEST DATA:", activeQuestForHonor);
         if (!activeQuestForHonor || !user || !profile) return;
 
-        const { id, xp, type, currentHp } = activeQuestForHonor;
+        // Destructure difficulty from the active quest
+        const { id, xp, type, currentHp, difficulty } = activeQuestForHonor;
 
         let lootAwarded = [];
         let currentInv = profile.inventory || [];
 
-        // 2. BOSS KILL LOGIC
+        // 2. DYNAMIC REWARD LOGIC 💰
+        let goldEarned = 0;
+
         if (type === "boss" && currentHp === 1) {
-            victorySound.play();
-            const bossDrop = BOSS_LOOT_TABLE[profile.level];
-            if (bossDrop && !currentInv.includes(bossDrop.id)) {
-                lootAwarded.push(bossDrop);
-            }
+            goldEarned = 500;
+        } else {
+            const difficultyRewards = {
+                easy: 50,
+                medium: 100,
+                hard: 200
+            };
+
+            // Standardize the key to lowercase to match our reward table
+            const diffKey = difficulty ? difficulty.toLowerCase() : "easy";
+            goldEarned = difficultyRewards[diffKey] || 100;
         }
+
+        let newGold = (profile.gold || 0) + goldEarned;
 
         // 3. XP & LEVEL UP LOGIC
         let newXp = (profile.xp || 0) + xp;
@@ -156,14 +216,19 @@ export default function Dashboard() {
             }
         }
 
-        // 4. TRIGGER OVERLAY (Level Up / Loot)
+        // 4. TRIGGER OVERLAY
         if (isLevelUp || lootAwarded.length > 0) {
             setUnlockedLoot(lootAwarded);
             setShowLevelUp(true);
         }
 
-        // 5. UPDATE FIRESTORE
-        const userUpdates = { xp: newXp, level: newLevel };
+        // 5. PREPARE FIRESTORE UPDATE
+        const userUpdates = {
+            xp: newXp,
+            level: newLevel,
+            gold: newGold
+        };
+
         if (lootAwarded.length > 0) {
             const newItemIds = lootAwarded.map(item => item.id);
             userUpdates.inventory = [...new Set([...currentInv, ...newItemIds])];
@@ -174,19 +239,32 @@ export default function Dashboard() {
             await updateDoc(doc(db, "quests", id), {
                 status: "completed",
                 currentHp: 0,
-                proof: proofOfWork, // THE PROOF FROM MODAL!
+                proof: proofOfWork,
                 completedAt: serverTimestamp()
             });
 
-            // Close modal and reset
             setIsHonorOpen(false);
             setActiveQuestForHonor(null);
-            toast.success("Honor Verified. XP Awarded! ✨");
+
+            // Success Toast
+            toast.success(
+                `Honor Verified! +${xp} XP & +${goldEarned} Gold! 🪙`,
+                {
+                    icon: '⚔️',
+                    style: {
+                        border: `1px solid ${goldEarned >= 200 ? '#fbbf24' : '#10b981'}`,
+                        background: '#1e293b',
+                        color: '#fff'
+                    }
+                }
+            );
         } catch (error) {
             console.error("Error completing quest:", error);
             toast.error("The gods rejected your proof. Try again.");
         }
     };
+
+
 
     const handleClearAllHistory = async () => {
         try {
@@ -308,6 +386,24 @@ export default function Dashboard() {
                     </div>
                     <small>{profile?.xp || 0} / {currentXpLimit} XP</small>
                 </div>
+                <div className="forge-dropdown-container" ref={forgeRef}>
+                    <button
+                        className={`forge-toggle-btn ${isForgeOpen ? 'active' : ''}`}
+                        onClick={() => setIsForgeOpen(!isForgeOpen)}
+                    >
+                        ⚒️ The Forge
+                    </button>
+
+                    {isForgeOpen && (
+                        <div className="forge-dropdown-menu">
+                            {profile?.uid ? (
+                                <Forge userData={profile} />
+                            ) : (
+                                <p className="loading-text">Heating the forge fires...</p>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <button onClick={logout} className="logout-btn">Leave Tavern</button>
             </header>
 
@@ -353,7 +449,7 @@ export default function Dashboard() {
                                         <span className="xp-badge">+{quest.xp} XP</span>
                                         <button
                                             className="complete-btn"
-                                            onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp, quest.title)}
+                                            onClick={() => handleCompleteQuest(quest.id, quest.xp, quest.type, quest.currentHp, quest.title, quest)}
                                         >
                                             {quest.type === 'boss' ? 'ATTACK' : 'Complete'}
                                         </button>
@@ -363,7 +459,7 @@ export default function Dashboard() {
                         )}
                     </div>
 
-                    <section className="history-section">
+                    <section className="history-section forge-section-wrapper">
                         <div className="section-header">
                             <h3>Quest History ({completedQuests.length})</h3>
                             {completedQuests.length > 0 && (
@@ -411,12 +507,16 @@ export default function Dashboard() {
                         )}
                     </section>
 
+
+
                 </section>
 
                 {/* RIGHT COLUMN: The Hall of Heroes Sidebar */}
                 <aside className="leaderboard-sidebar">
                     <Leaderboard />
                 </aside>
+
+
 
             </main>
 

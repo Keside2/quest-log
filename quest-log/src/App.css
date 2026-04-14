@@ -1,7 +1,30 @@
 /* Custom toast styling to match QuestLog */
+:root {
+  /* Default Knight Theme */
+  --primary-color: #38bdf8; 
+  --primary-glow: rgba(56, 189, 248, 0.3);
+  --bg-dark: #0f172a;
+  --card-bg: #1e293b;
+  --accent-color: #f87171;
+}
+
 .react-hot-toast {
   background: #1e293b !important;
   color: #fff !important;
   border: 1px solid #38bdf8 !important;
   border-radius: 8px !important;
+}
+
+
+
+/* Example of how to use it in your components */
+.complete-btn {
+  background-color: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* Instead of: background: #38bdf8; */
+.complete-btn, .xp-badge, .add-quest-pill {
+    background-color: var(--primary-color, #38bdf8); /* #38bdf8 is the fallback */
+    box-shadow: 0 0 10px var(--primary-glow, rgba(56, 189, 248, 0.3));
 }
