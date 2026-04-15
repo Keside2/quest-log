@@ -52,7 +52,10 @@ Most productivity tools feel like chores. **QuestLog** uses gamification mechani
 ### Phase 4: Future Evolution (The Legendary Tier 🏗️)
 
 - [x] **Social Tavern:** Global Leaderboard (Hall of Heroes) to compare XP with friends.
-- [ ] **The Forge:** Use XP/Gold to unlock custom CSS themes and avatar frames.
+- [x] **The Forge:** Use XP/Gold to unlock custom CSS themes and avatar frames.
+- [x] **Dynamic Economy:** Gold rewards scaled by difficulty (Easy: 50g, Medium: 150g, Hard: 300g).
+- [x] **Ambient UI:** Glow" effects and dynamic row styling based on equipped themes.
+- [x] **UX Polishing:** Smart menu dismissal (Click-outside & Escape key listeners).
 - [ ] **Soundscape:** 8-bit audio cues for quest completion and UI interaction.
 
 ---
@@ -87,16 +90,31 @@ To ensure users in all regions (including Nigeria) can sync their GitHub data wi
 
 ## 📜 Dev Log
 
-### Day 92
+### Day 94
 
-> keeping the streak alive
+> The Forge is hot! Balanced the economy so "Hard" quests finally feel like major wins. Added dynamic theme switching and improved the general "Game Feel" of the dashboard.
 
 ---
 
 ## ⚙️ Development Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone [https://github.com/Keside2/quest-log.git](https://github.com/Keside2/quest-log.git)
    cd quest-log
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up Firebase:** Add your .env with Firebase credentials.
+
+4. **Run development server:**
+   **Install dependencies:**
+   ```bash
+   npm start
    ```
