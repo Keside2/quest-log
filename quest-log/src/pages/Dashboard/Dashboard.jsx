@@ -304,30 +304,39 @@ export default function Dashboard() {
             const totalCommitsFound = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
 
             // --- THE ANTI-CHEAT LOCK ---
-            // Subtract commits we already gave XP for
             const alreadyRewarded = profile.lastSyncedCommitCount || 0;
             const newCommits = totalCommitsFound - alreadyRewarded;
+
+            // Debugging: Check these values in your console (F12)
+            console.log("Total Found:", totalCommitsFound);
+            console.log("Already Rewarded:", alreadyRewarded);
+            console.log("Difference (New):", newCommits);
 
             if (newCommits <= 0) {
                 toast.dismiss(toastId);
                 return toast("No new commits since last sync. Keep coding!", { icon: '⚒️' });
             }
 
-            // --- XP CALCULATION ---
-            const earnedXp = newCommits * 10;
-            const newTotalXp = (profile.xp || 0) + earnedXp;
+            // --- REWARD CALCULATION ---
+            const xpPerCommit = 10;
+            const goldPerCommit = 5; // NEW: Gold reward!
 
-            // Use your service formula for level checking
+            const earnedXp = newCommits * xpPerCommit;
+            const earnedGold = newCommits * goldPerCommit;
+
+            const newTotalXp = (profile.xp || 0) + earnedXp;
+            const newTotalGold = (profile.gold || 0) + earnedGold;
+
             const { currentLevel } = calculateLevelInfo(newTotalXp);
 
             // --- UPDATE HISTORY ---
-            // This makes the sync appear in your "Quest History" list
             await addDoc(collection(db, "quests"), {
                 userId: user.uid,
                 title: `GitHub Sync: ${newCommits} Commits`,
                 xp: earnedXp,
+                gold: earnedGold, // Logging gold in history
                 status: "completed",
-                type: "sync", // marked as sync so you can style it differently if you want
+                type: "sync",
                 proof: `Oracle verified ${newCommits} new scrolls in the repository.`,
                 createdAt: serverTimestamp(),
                 completedAt: serverTimestamp()
@@ -337,8 +346,9 @@ export default function Dashboard() {
             const userRef = doc(db, "users", user.uid);
             await updateDoc(userRef, {
                 xp: newTotalXp,
+                gold: newTotalGold, // AWARD THE GOLD!
                 level: currentLevel,
-                lastSyncedCommitCount: totalCommitsFound // The Lock: Save the new total
+                lastSyncedCommitCount: totalCommitsFound
             });
 
             if (currentLevel > profile.level) {
@@ -346,11 +356,11 @@ export default function Dashboard() {
                 victorySound.play();
             }
 
-            toast.success(`Synced! +${earnedXp} XP!`, { id: toastId });
+            toast.success(`Synced! +${earnedXp} XP & +${earnedGold} Gold! 🪙`, { id: toastId });
 
         } catch (err) {
             console.error(err);
-            toast.error("The Oracle is unreachable. Check VPN!", { id: toastId });
+            toast.error("The Oracle is unreachable. Check your proxy!", { id: toastId });
         } finally {
             setIsSyncing(false);
         }
