@@ -28,6 +28,7 @@ import Leaderboard from "../../components/Leaderboard/Leaderboard";
 import Forge from "../../components/Forge/Forge";
 import "./Dashboard.css";
 import "./BossStyles.css";
+import "../../App.css"
 
 const victorySound = new Audio("https://actions.google.com/sounds/v1/foley/wind_chime_fast_up.ogg");
 
@@ -47,6 +48,7 @@ export default function Dashboard() {
     const [activeQuestForHonor, setActiveQuestForHonor] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isForgeOpen, setIsForgeOpen] = useState(false);
+    const equippedTheme = profile?.equippedTheme || 'default-realm';
     const forgeRef = useRef(null);
 
 
@@ -366,7 +368,7 @@ export default function Dashboard() {
         }
     };
     return (
-        <div className={`dashboard-container ${isWorldShaking ? 'world-event-shake' : ''}`}>
+        <div className={`dashboard-container ${equippedTheme} ${isWorldShaking ? 'world-event-shake' : ''}`}>
             <Toaster position="top-center" reverseOrder={false} />
             <BossManager user={user} profile={profile} activeQuests={quests} setIsWorldShaking={setIsWorldShaking} />
 

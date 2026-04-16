@@ -16,15 +16,3 @@
 }
 
 
-
-/* Example of how to use it in your components */
-.complete-btn {
-  background-color: var(--primary-color);
-  box-shadow: 0 0 10px var(--primary-glow);
-}
-
-/* Instead of: background: #38bdf8; */
-.complete-btn, .xp-badge, .add-quest-pill {
-    background-color: var(--primary-color, #38bdf8); /* #38bdf8 is the fallback */
-    box-shadow: 0 0 10px var(--primary-glow, rgba(56, 189, 248, 0.3));
-}
