@@ -146,6 +146,24 @@ export default function Dashboard() {
         };
     }, [isForgeOpen]);
 
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setIsForgeOpen(false);
+                setIsHonorOpen(false);
+                setIsSettingsOpen(false);
+                setIsModalOpen(false);
+
+
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup the listener when component unmounts
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleCompleteQuest = async (questId, questXp, questType, currentHp, questTitle, quest) => {
         if (!user || !profile) return;
 
