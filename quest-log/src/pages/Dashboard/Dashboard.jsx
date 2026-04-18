@@ -57,28 +57,47 @@ export default function Dashboard() {
     const itemsPerPage = 5;
     const currentXpLimit = profile ? Math.pow(profile.level || 1, 2) * 100 : 100;
 
-    // Listen to User Profile
+    // 1. Optimized Combined Quest Listener
     useEffect(() => {
         if (!user) return;
-        return onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-            if (docSnap.exists()) setProfile({ ...docSnap.data(), uid: docSnap.id });
-        });
-    }, [user]);
 
-    // Listen to Quests
-    useEffect(() => {
-        if (!user) return;
-        const q = query(collection(db, "quests"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-        return onSnapshot(q, (querySnapshot) => {
+        // We use orderBy so new quests appear at the top
+        const q = query(
+            collection(db, "quests"),
+            where("userId", "==", user.uid),
+            orderBy("createdAt", "desc")
+        );
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const active = [];
             const finished = [];
+
             querySnapshot.forEach((doc) => {
                 const data = { id: doc.id, ...doc.data() };
+                // Sorting into the two piles: Active vs Completed
                 data.status === "completed" ? finished.push(data) : active.push(data);
             });
+
             setQuests(active);
             setCompletedQuests(finished);
+        }, (error) => {
+            console.error("Quest Listener Error:", error);
         });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    // 2. Clean Profile Listener
+    useEffect(() => {
+        if (!user) return;
+
+        const unsubscribe = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                setProfile({ ...docSnap.data(), uid: docSnap.id });
+            }
+        });
+
+        return () => unsubscribe();
     }, [user]);
 
     // Habit Streak Logic
@@ -151,8 +170,8 @@ export default function Dashboard() {
             if (e.key === 'Escape') {
                 setIsForgeOpen(false);
                 setIsHonorOpen(false);
-                setIsSettingsOpen(false);
                 setIsModalOpen(false);
+                setIsConfirmOpen(false);
 
 
             }
