@@ -337,28 +337,30 @@ export default function Dashboard() {
         }
 
         setIsSyncing(true);
-        const toastId = toast.loading("Oracle is checking your commits...");
 
-        try {
+        // Using a promise-based toast for cleaner async handling
+        const syncPromise = (async () => {
             const totalCommitsFound = await fetchGithubCommits(profile.githubToken, profile.githubUsername);
-
-            // --- THE ANTI-CHEAT LOCK ---
             const alreadyRewarded = profile.lastSyncedCommitCount || 0;
+
+            // --- THE "NEGATIVE SYNC" FIX ---
+            // If GitHub says 11 but we recorded 17, reset the baseline so the next commit counts.
+            if (totalCommitsFound < alreadyRewarded) {
+                await updateDoc(doc(db, "users", user.uid), {
+                    lastSyncedCommitCount: totalCommitsFound
+                });
+                throw new Error("Baseline reset! Try syncing again on your next commit.");
+            }
+
             const newCommits = totalCommitsFound - alreadyRewarded;
 
-            // Debugging: Check these values in your console (F12)
-            console.log("Total Found:", totalCommitsFound);
-            console.log("Already Rewarded:", alreadyRewarded);
-            console.log("Difference (New):", newCommits);
-
             if (newCommits <= 0) {
-                toast.dismiss(toastId);
-                return toast("No new commits since last sync. Keep coding!", { icon: '⚒️' });
+                throw new Error("No new commits found. Keep coding! ⚒️");
             }
 
             // --- REWARD CALCULATION ---
             const xpPerCommit = 10;
-            const goldPerCommit = 5; // NEW: Gold reward!
+            const goldPerCommit = 5;
 
             const earnedXp = newCommits * xpPerCommit;
             const earnedGold = newCommits * goldPerCommit;
@@ -368,12 +370,13 @@ export default function Dashboard() {
 
             const { currentLevel } = calculateLevelInfo(newTotalXp);
 
-            // --- UPDATE HISTORY ---
+            // --- BATCH UPDATE ---
+            // Update History
             await addDoc(collection(db, "quests"), {
                 userId: user.uid,
                 title: `GitHub Sync: ${newCommits} Commits`,
                 xp: earnedXp,
-                gold: earnedGold, // Logging gold in history
+                gold: earnedGold,
                 status: "completed",
                 type: "sync",
                 proof: `Oracle verified ${newCommits} new scrolls in the repository.`,
@@ -381,29 +384,31 @@ export default function Dashboard() {
                 completedAt: serverTimestamp()
             });
 
-            // --- UPDATE USER PROFILE ---
-            const userRef = doc(db, "users", user.uid);
-            await updateDoc(userRef, {
+            // Update User Profile
+            await updateDoc(doc(db, "users", user.uid), {
                 xp: newTotalXp,
-                gold: newTotalGold, // AWARD THE GOLD!
+                gold: newTotalGold,
                 level: currentLevel,
                 lastSyncedCommitCount: totalCommitsFound
             });
 
             if (currentLevel > profile.level) {
                 setShowLevelUp(true);
-                victorySound.play();
+                if (typeof victorySound !== 'undefined') victorySound.play();
             }
 
-            toast.success(`Synced! +${earnedXp} XP & +${earnedGold} Gold! 🪙`, { id: toastId });
+            return `Synced! +${earnedXp} XP & +${earnedGold} Gold! 🪙`;
+        })();
 
-        } catch (err) {
-            console.error(err);
-            toast.error("The Oracle is unreachable. Check your proxy!", { id: toastId });
-        } finally {
-            setIsSyncing(false);
-        }
+        toast.promise(syncPromise, {
+            loading: 'Oracle is checking your scrolls...',
+            success: (data) => data,
+            error: (err) => err.message
+        });
+
+        setIsSyncing(false);
     };
+
     return (
         <div className={`dashboard-container ${equippedTheme} ${isWorldShaking ? 'world-event-shake' : ''}`}>
             <Toaster position="top-center" reverseOrder={false} />
